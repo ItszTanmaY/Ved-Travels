@@ -67,7 +67,7 @@ export default function HostDashboardModal() {
   const [newDailyRate, setNewDailyRate] = useState(999);
   const [newDeposit, setNewDeposit] = useState(1500);
   const [newMileage, setNewMileage] = useState("40 km/l");
-  const [newImageUrl, setNewImageUrl] = useState("/images/superbike.jpg");
+  const [newImageUrl, setNewImageUrl] = useState("/images/RoyalEnfieldClassic350.jpeg");
   const [isSubmittingVehicle, setIsSubmittingVehicle] = useState(false);
 
   // OTP verification state
@@ -129,12 +129,20 @@ export default function HostDashboardModal() {
         mileage: newMileage,
         hourlyRate: Number(newHourlyRate),
         dailyRate: Number(newDailyRate),
+        slabs: {
+          hr1: newCategory === "bike" ? Number(newHourlyRate) : undefined,
+          hr3: newCategory === "bike" ? Math.round(Number(newHourlyRate) * 2.6) : undefined,
+          hr6: newCategory === "bike" ? Math.round(Number(newHourlyRate) * 5.6) : undefined,
+          hr12: Math.round(Number(newDailyRate) * 0.7),
+          hr24: Number(newDailyRate),
+        },
+        minHours: newCategory === "car" ? 12 : 1,
         securityDeposit: Number(newDeposit),
         ownerType: "host",
         hostId: currentUser?.id || "demo-host-1",
         hostName: currentUser?.name || "Keval Pandya",
         available: false, // Locked until approved by Admin
-        images: [newImageUrl || "/images/superbike.jpg"],
+        images: [newImageUrl || "/images/RoyalEnfieldClassic350.jpeg"],
         features: [
           "100% Sanitized",
           "Commercial Insurance",
@@ -557,17 +565,17 @@ export default function HostDashboardModal() {
                 <div className="flex flex-wrap gap-1.5">
                   {[
                     {
-                      name: "Hunter 350 Dapper Ash",
+                      name: "Classic 350 Stealth",
                       brand: "Royal Enfield",
                       category: "bike" as const,
                       transmission: "Manual" as const,
                       fuel: "Petrol" as const,
                       seats: 2,
                       mileage: "36 km/l",
-                      hourly: 89,
-                      daily: 999,
-                      deposit: 1500,
-                      img: "/images/superbike.jpg",
+                      hourly: 350,
+                      daily: 3899,
+                      deposit: 2000,
+                      img: "/images/RoyalEnfieldClassic350.jpeg",
                     },
                     {
                       name: "Activa 6G Deluxe",
@@ -577,10 +585,10 @@ export default function HostDashboardModal() {
                       fuel: "Petrol" as const,
                       seats: 2,
                       mileage: "48 km/l",
-                      hourly: 49,
-                      daily: 449,
-                      deposit: 999,
-                      img: "/images/activa.png",
+                      hourly: 100,
+                      daily: 1650,
+                      deposit: 1000,
+                      img: "/images/Activa.jpeg",
                     },
                     {
                       name: "Swift VXi DualJet",
@@ -590,10 +598,10 @@ export default function HostDashboardModal() {
                       fuel: "Petrol" as const,
                       seats: 5,
                       mileage: "22 km/l",
-                      hourly: 119,
-                      daily: 1499,
-                      deposit: 2500,
-                      img: "/images/swift.png",
+                      hourly: 250,
+                      daily: 3500,
+                      deposit: 3000,
+                      img: "/images/swift.jpeg",
                     },
                     {
                       name: "Thar 4x4 Hard Top",
@@ -603,10 +611,10 @@ export default function HostDashboardModal() {
                       fuel: "Diesel" as const,
                       seats: 4,
                       mileage: "15 km/l",
-                      hourly: 279,
-                      daily: 3799,
+                      hourly: 450,
+                      daily: 8000,
                       deposit: 5000,
-                      img: "/images/thar.png",
+                      img: "/images/Thar4x4.jpeg",
                     },
                   ].map((p, idx) => (
                     <button

@@ -57,7 +57,7 @@ export default function AuthModal() {
       name:
         name ||
         (activeTab === "admin"
-          ? "Vedraj Patel (Admin)"
+          ? "Shantanu Shekhar (Admin)"
           : activeTab === "host"
           ? "Vadodara Host Partner"
           : "Vadodara Traveler"),

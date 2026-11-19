@@ -8,21 +8,21 @@ export function ZoomcarCategoriesGrid() {
   const { setSelectedDuration, setSearchCategory } = useRental();
 
   const handleSelectDaily = () => {
-    setSelectedDuration(DURATION_PRESETS[0]); // 6h
+    setSelectedDuration(DURATION_PRESETS[2]); // 6 Hrs
     setSearchCategory("all");
     const el = document.getElementById("fleet-section");
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSelectSubscription = () => {
-    setSelectedDuration(DURATION_PRESETS[4]); // 7d
+    setSelectedDuration(DURATION_PRESETS[4]); // 24 Hrs
     setSearchCategory("car");
     const el = document.getElementById("fleet-section");
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSelectWeekday = () => {
-    setSelectedDuration(DURATION_PRESETS[3]); // 3d
+    setSelectedDuration(DURATION_PRESETS[3]); // 12 Hrs
     setSearchCategory("all");
     const el = document.getElementById("fleet-section");
     if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -73,7 +73,7 @@ export function ZoomcarCategoriesGrid() {
               {[
                 "Instant 4-digit OTP handover",
                 "2 Sanitized ISI Helmets with bikes",
-                "Sayajigunj Central Free Pickup",
+                "Free pickup across 6 Vadodara Hubs",
               ].map((item, idx) => (
                 <li key={idx} className="flex items-center gap-2 text-xs font-medium text-black/70">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -156,7 +156,7 @@ export function ZoomcarCategoriesGrid() {
               Weekday Pass (Mon - Fri)
             </h3>
             <p className="text-xs text-black/60 font-medium leading-relaxed mb-5">
-              Work commute special from Monday morning to Friday night. Dedicated reserved vehicle at Sayajigunj or your office doorstep.
+              Work commute special from Monday morning to Friday night. Dedicated reserved vehicle at your nearest Vadodara hub or doorstep.
             </p>
 
             <ul className="space-y-2 mb-6">

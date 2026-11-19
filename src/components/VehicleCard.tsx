@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
-import { Star, ShieldCheck, ArrowRight, Sparkles } from "lucide-react";
+import { Star, ShieldCheck, ArrowRight, Sparkles, Clock } from "lucide-react";
 import { Vehicle } from "@/data/fleet";
 import { useRental } from "@/context/RentalContext";
 import { formatINR } from "@/lib/utils";
@@ -18,6 +17,8 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
   const pricing = calculateTariff(vehicle, selectedDuration, doorstepDelivery);
   const isSlotLocked = isVehicleSlotLocked(vehicle.id, selectedDuration);
   const isAvailable = vehicle.available && !isSlotLocked;
+  const isCar = vehicle.category === "car" || vehicle.minHours >= 12;
+  const showMinCarBadge = isCar && selectedDuration.hours < 12;
 
   return (
     <div
@@ -50,11 +51,21 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
               <span>{vehicle.plate}</span>
             </div>
 
-            {/* Rating */}
-            <div className="inline-flex items-center gap-1 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-white border border-white/10">
-              <Star className="w-3.5 h-3.5 text-[#059669] fill-[#059669]" />
-              <span>{vehicle.rating}</span>
-              <span className="text-white/40 font-normal">({vehicle.tripsCount})</span>
+            {/* Smart Car Min Duration Badge OR Rating */}
+            <div className="flex items-center gap-1.5">
+              {showMinCarBadge && (
+                <div className="inline-flex items-center gap-1 bg-amber-500/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold text-black shadow-md border border-amber-300">
+                  <Clock className="w-3 h-3 text-black" />
+                  <span>Min 12 Hrs</span>
+                </div>
+              )}
+
+              {/* Rating */}
+              <div className="inline-flex items-center gap-1 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-white border border-white/10">
+                <Star className="w-3.5 h-3.5 text-[#059669] fill-[#059669]" />
+                <span>{vehicle.rating}</span>
+                <span className="text-white/40 font-normal">({vehicle.tripsCount})</span>
+              </div>
             </div>
           </div>
 
@@ -86,8 +97,15 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
 
         {/* Card Content */}
         <div className="p-4 sm:p-5 text-white">
-          <div className="text-[10px] uppercase font-bold tracking-widest text-[#FF6B00] mb-1">
-            {vehicle.brand} • {vehicle.category === "bike" ? "Two-Wheeler" : "Self-Drive Car"}
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-[10px] uppercase font-bold tracking-widest text-[#FF6B00]">
+              {vehicle.brand} • {vehicle.category === "bike" ? "Two-Wheeler / Scooter" : "Self-Drive Car"}
+            </span>
+            {isCar && (
+              <span className="text-[9px] font-bold uppercase text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded-md border border-emerald-800">
+                Min 12 Hrs
+              </span>
+            )}
           </div>
 
           <h3 className="text-base sm:text-lg font-bold tracking-tight text-white group-hover:text-[#FF6B00] transition-colors leading-snug">
@@ -123,8 +141,12 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
       <div className="p-4 sm:p-5 pt-0 border-t border-white/5">
         <div className="flex items-end justify-between pt-3 gap-3">
           <div className="flex-1 min-w-0 pr-1">
-            <div className="text-[9px] sm:text-[10px] uppercase font-bold text-white/40 tracking-wider truncate">
-              Rent for {selectedDuration.label}
+            <div className="text-[9px] sm:text-[10px] uppercase font-bold text-white/40 tracking-wider truncate flex items-center gap-1.5">
+              <span>
+                {showMinCarBadge
+                  ? "Rent for 12 Hrs (Car Min Package)"
+                  : `Rent for ${selectedDuration.label}`}
+              </span>
             </div>
             <div className="flex items-baseline gap-1 mt-0.5 flex-wrap">
               <span className="text-xl sm:text-2xl font-bold text-[#FF6B00] tracking-tight tabular-nums">

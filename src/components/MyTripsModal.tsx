@@ -281,7 +281,7 @@ export default function MyTripsModal() {
                       <span className="font-bold text-black truncate block">
                         {booking.doorstepDelivery
                           ? `Doorstep: ${booking.deliveryAddress}`
-                          : "Sayajigunj Central Hub (Platform 1)"}
+                          : (booking.pickupLocation || booking.hubName || "Vadodara Central Hub")}
                       </span>
                     </div>
 
@@ -310,15 +310,17 @@ export default function MyTripsModal() {
                               `----------------------------------------\n` +
                               `• *Booking Code:* ${booking.bookingCode}\n` +
                               `• *Vehicle:* ${booking.vehicleName} (${booking.vehiclePlate})\n` +
-                              `• *Duration:* ${booking.durationLabel}\n` +
+                              `• *Duration / Tariff Slab:* ${booking.durationLabel}\n` +
                               `• *Start Date:* ${booking.startDate}\n` +
-                              `• *Pickup Hub:* ${booking.hubName}\n` +
-                              `• *Payment Mode:* ${booking.paymentMode === "upi_advance" ? `UPI Advance (UTR: ${booking.upiUtr || "Pending"})` : "Pay at Sayajigunj Hub (Cash/UPI)"}\n` +
+                              `• *Pickup / Handover Location:* ${booking.pickupLocation || booking.hubName}\n` +
+                              `• *Doorstep Delivery:* ${booking.doorstepDelivery ? `Yes (+₹199) to ${booking.deliveryAddress}` : `No (Hub Pickup at ${booking.pickupLocation || booking.hubName})`}\n` +
+                              `• *Payment Mode:* ${booking.paymentMode === "upi_advance" ? `UPI Advance (UTR: ${booking.upiUtr || "Pending"})` : `Pay at Hub (Cash/UPI)`}\n` +
                               `• *Total Estimated:* ${formatINR(booking.totalAmount)}\n` +
                               `----------------------------------------\n` +
                               `🔑 *4-DIGIT START TRIP OTP:* ${booking.otp}\n` +
                               `----------------------------------------\n` +
                               `• *Renter:* ${booking.renterName} (${booking.renterPhone})\n` +
+                              `• *Support Contact:* Shantanu Shekhar (+91 95468 83777)\n` +
                               `Please keep the machine sanitized & ready for handover.`
                           )}`}
                           target="_blank"

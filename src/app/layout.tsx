@@ -12,9 +12,9 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "Ved Travels | Vadodara's Premier Self-Drive Fleet & Host Marketplace",
+  title: "Ved Travels | Vadodara Self-Drive Cars & Bikes Rental",
   description:
-    "Vadodara's premier self-drive bikes & cars rental platform and host marketplace. Hourly & daily bookings, Sayajigunj central hub pickup & doorstep delivery across Vadodara (GJ-06).",
+    "Ved Travels Vadodara - Self-drive bikes and cars rental with transparent slab pricing. 24x7 service across Ajwa Road, Waghodia Road, Sumandeep Vidyapith, Parul University, Vadodara Railway Station & Airport.",
 };
 
 export default function RootLayout({

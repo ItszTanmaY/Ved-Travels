@@ -110,6 +110,19 @@ export function Navbar() {
 
           {/* Right Action / Auth Button */}
           <div className="flex items-center gap-2 sm:gap-3 z-10 relative shrink-0">
+            {/* Live 24x7 Helpline Badge */}
+            <a
+              href="https://wa.me/919546883777"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/25 transition-all cursor-pointer shadow-xs"
+              title="Chat with Shantanu Shekhar on WhatsApp (24x7)"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>24×7 Live</span>
+              <span className="text-emerald-400/60">•</span>
+              <span>+91 95468 83777</span>
+            </a>
             {currentUser ? (
               <div className="relative">
                 {currentUser.role === "admin" ? (
@@ -286,6 +299,28 @@ export function Navbar() {
             </div>
 
             <div className="mt-auto pb-12 space-y-3">
+              {/* 24x7 Mobile Contact Pill */}
+              <a
+                href="https://wa.me/919546883777"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 transition-all mb-2"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  <div className="text-left">
+                    <span className="text-[11px] font-bold uppercase tracking-wider block text-emerald-400">
+                      24×7 Available Helpline
+                    </span>
+                    <span className="text-sm font-bold text-white block">
+                      +91 95468 83777
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500 text-black">
+                  WhatsApp
+                </span>
+              </a>
               {currentUser ? (
                 <>
                   {currentUser.role === "host" ? (

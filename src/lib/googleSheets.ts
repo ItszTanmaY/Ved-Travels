@@ -13,6 +13,8 @@ export async function syncBookingToGoogleSheets(booking: Booking) {
       body: JSON.stringify({
         action: "create_booking",
         ...booking,
+        pickupLocation: booking.pickupLocation || booking.hubName,
+        pickupHub: booking.pickupLocation || booking.hubName,
       }),
     });
     const data = await res.json();

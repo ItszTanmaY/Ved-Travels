@@ -21,7 +21,7 @@ export function ZoomcarExploreGrid() {
   };
 
   const handleGiftClick = () => {
-    toast.success("Gift Vouchers Available at Sayajigunj Hub!", {
+    toast.success("Gift Vouchers Available across all Vadodara Hubs!", {
       description: "Contact our 24/7 Helpline (+91 95468 83777) to issue custom digital drive gift cards.",
     });
   };

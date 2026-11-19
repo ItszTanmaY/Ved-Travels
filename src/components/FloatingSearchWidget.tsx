@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
-import { ArrowRight, MapPin, Calendar, Clock, Truck, Sparkles } from "lucide-react";
+import React, { useState } from "react";
+import { ArrowRight, MapPin, Clock, Truck, ChevronDown, CheckCircle2 } from "lucide-react";
 import { useRental, DURATION_PRESETS } from "@/context/RentalContext";
-import { VADODARA_CENTRAL_HUB } from "@/data/fleet";
+import { VADODARA_LOCATIONS } from "@/data/fleet";
 import { cn } from "@/lib/utils";
 
 export function FloatingSearchWidget() {
@@ -12,11 +12,13 @@ export function FloatingSearchWidget() {
     setSearchCategory,
     selectedDuration,
     setSelectedDuration,
+    selectedLocation,
+    setSelectedLocation,
     doorstepDelivery,
     setDoorstepDelivery,
-    pickupTime,
-    setPickupTime,
   } = useRental();
+
+  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,11 +34,12 @@ export function FloatingSearchWidget() {
       {/* Category selector row */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
         <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-[10px] uppercase font-bold tracking-widest text-[#FF6B00]">
-            VADODARA SINGLE CENTRAL HUB
+            6 VADODARA HUBS ACTIVE
           </span>
           <span className="text-white/30">•</span>
-          <span className="text-white/60 text-xs">Sayajigunj Platform 1</span>
+          <span className="text-white/60 text-xs">24×7 Instant Key Handover</span>
         </div>
 
         <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-white/5 w-full sm:w-auto">
@@ -50,7 +53,7 @@ export function FloatingSearchWidget() {
                 : "text-white/60 hover:text-white"
             )}
           >
-            All Fleet
+            All Fleet (10)
           </button>
           <button
             type="button"
@@ -62,7 +65,7 @@ export function FloatingSearchWidget() {
                 : "text-white/60 hover:text-white"
             )}
           >
-            <span>Bikes</span>
+            <span>Bikes (3)</span>
             <span>🏍️</span>
           </button>
           <button
@@ -75,7 +78,7 @@ export function FloatingSearchWidget() {
                 : "text-white/60 hover:text-white"
             )}
           >
-            <span>Cars</span>
+            <span>Cars (7)</span>
             <span>🚗</span>
           </button>
         </div>
@@ -83,20 +86,60 @@ export function FloatingSearchWidget() {
 
       {/* Main Input Columns */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-        {/* Column 1: Single Central Hub */}
-        <div className="md:col-span-4 flex items-center px-4 py-2.5 gap-3 bg-white/5 rounded-2xl border border-white/5">
-          <MapPin className="w-5 h-5 text-[#FF6B00] shrink-0" />
-          <div className="flex flex-col min-w-0">
-            <label className="text-[9px] uppercase font-bold text-white/50 tracking-wider">
-              Central Pickup Station (Free)
-            </label>
-            <span className="text-xs font-bold text-white truncate">
-              Vadodara Central Hub (Sayajigunj)
-            </span>
-          </div>
+        {/* Column 1: Vadodara 6 Locations Dropdown */}
+        <div className="md:col-span-4 relative">
+          <button
+            type="button"
+            onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+            className="w-full flex items-center justify-between px-4 py-2.5 gap-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 transition-all text-left cursor-pointer"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <MapPin className="w-4 h-4 text-[#FF6B00] shrink-0" />
+              <div className="flex flex-col min-w-0">
+                <label className="text-[9px] uppercase font-bold text-white/50 tracking-wider">
+                  Pickup / Delivery Hub
+                </label>
+                <span className="text-xs font-bold text-white truncate">
+                  {selectedLocation}
+                </span>
+              </div>
+            </div>
+            <ChevronDown className="w-4 h-4 text-white/50 shrink-0" />
+          </button>
+
+          {/* Locations popup */}
+          {locationDropdownOpen && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-[#1C1C1E] border border-white/15 rounded-2xl shadow-2xl p-2 z-50 space-y-1">
+              <div className="px-2.5 py-1 text-[10px] uppercase font-bold text-white/40 tracking-wider">
+                Select from our 6 Vadodara Hubs:
+              </div>
+              {VADODARA_LOCATIONS.map((loc) => (
+                <button
+                  key={loc.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedLocation(loc.name);
+                    setLocationDropdownOpen(false);
+                  }}
+                  className={cn(
+                    "w-full px-3 py-2 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer",
+                    selectedLocation === loc.name
+                      ? "bg-[#059669] text-white"
+                      : "text-white/80 hover:bg-white/10"
+                  )}
+                >
+                  <div>
+                    <span className="font-bold block">{loc.name}</span>
+                    <span className="text-[10px] text-white/50 block">{loc.landmark}</span>
+                  </div>
+                  {selectedLocation === loc.name && <CheckCircle2 className="w-3.5 h-3.5" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Column 2: Duration Selector Presets */}
+        {/* Column 2: Duration Selector Presets (1h, 3h, 6h, 12h, 24h) */}
         <div className="md:col-span-5 flex items-center px-3 py-2 gap-2 bg-white/5 rounded-2xl border border-white/5 overflow-x-auto">
           <Clock className="w-4 h-4 text-white/50 shrink-0 ml-1" />
           <div className="flex items-center gap-1 min-w-max">

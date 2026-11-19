@@ -168,9 +168,9 @@ function doPost(e) {
         data.paymentMode === "upi_advance" ? "UPI Advance" : "Pay at Vadodara Hub",
         data.upiUtr || "N/A (Pay at Hub)",
         data.otp || "",
-        data.doorstepDelivery ? "Yes (+₹199)" : "No (Sayajigunj Hub Pickup)",
-        data.deliveryAddress || "Sayajigunj Central Hub",
-        data.hubName || "Vadodara Main Hub (Sayajigunj Platform 1)"
+        data.doorstepDelivery ? "Yes (+₹199)" : "No (Hub Pickup)",
+        data.deliveryAddress || data.pickupLocation || "Vadodara Hub",
+        data.pickupLocation || data.hubName || "Vadodara Railway Station"
       ]);
 
       return ContentService.createTextOutput(

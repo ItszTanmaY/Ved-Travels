@@ -31,7 +31,7 @@ import { ZoomcarHostFeatures } from "@/components/ZoomcarHostFeatures";
 import { ZoomcarTrustBar } from "@/components/ZoomcarTrustBar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useRental } from "@/context/RentalContext";
-import { VADODARA_CENTRAL_HUB, Vehicle } from "@/data/fleet";
+import { VADODARA_CENTRAL_HUB, VADODARA_LOCATIONS, VED_BUSINESS_CONFIG, Vehicle } from "@/data/fleet";
 import { formatINR } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -84,14 +84,14 @@ export default function Home() {
           {/* Background Image & Gradient */}
           <div className="absolute inset-0 z-0 overflow-hidden">
             <Image
-              src="/images/porsche.jpg"
-              alt="Luxury vehicle immersive background"
+              src="/images/TharRoxx.jpeg"
+              alt="Ved Travels luxury fleet background"
               fill
-              className="object-cover object-center blur-[4px] scale-105 transition-all duration-700"
+              className="object-cover object-center blur-[3px] scale-105 transition-all duration-700"
               priority
             />
             {/* Dark vignette overlay for text legibility with subtle midnight depth */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-black/55 to-[#0b1329]/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-black/65 to-[#0b1329]/50" />
           </div>
 
           {/* Floating Glass Badges - Aligned with element end (right edge) */}
@@ -256,7 +256,7 @@ export default function Home() {
                         : "text-white/60 hover:text-white"
                     )}
                   >
-                    Bikes & Scooters (4)
+                    Bikes & Scooters ({vehicles.filter((v) => v.category === "bike").length})
                   </button>
                   <button
                     type="button"
@@ -268,7 +268,7 @@ export default function Home() {
                         : "text-white/60 hover:text-white"
                     )}
                   >
-                    Self-Drive Cars (4)
+                    Self-Drive Cars ({vehicles.filter((v) => v.category === "car").length})
                   </button>
                 </div>
               </div>
@@ -471,32 +471,31 @@ export default function Home() {
         </section>
 
         {/* ============================================================== */}
-        {/* 5. VADODARA CENTRAL HUB & DOORSTEP DELIVERY SECTION */}
+        {/* 5. VADODARA CENTRAL HUB & 6 SERVICE LOCATIONS SECTION */}
         {/* ============================================================== */}
         <section id="hub-details" className="px-6 py-20 max-w-7xl mx-auto border-t border-black/5">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-6 space-y-6">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/5 border border-black/10 text-xs font-bold text-black">
-                <MapPin className="w-3.5 h-3.5 text-[#FF6B00]" />
-                <span>SINGLE CONVENIENCE HUB IN VADODARA</span>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{VED_BUSINESS_CONFIG.availabilityBadge} • 6 VADODARA SERVICE POINTS</span>
               </div>
 
               <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-black">
-                Vadodara Central Hub <br />
-                <span className="text-[#FF6B00]">(Sayajigunj / Alkapuri)</span>
+                Vadodara Central Operations <br />
+                <span className="text-[#059669]">Ved Travels (GJ-06)</span>
               </h2>
 
               <p className="text-sm text-black/60 leading-relaxed">
-                Located directly opposite Vadodara Railway Junction (Platform 1) and connecting
-                straight to RC Dutt Road, Alkapuri. Zero branch confusion—all machines are inspected,
-                sanitized, and handed over at this single central station.
+                Managed personally by <strong className="text-black font-semibold">{VED_BUSINESS_CONFIG.owner}</strong>.
+                Instant key handovers across all major Vadodara transit hubs, stations, and university corridors with zero counter waiting time.
               </p>
 
               <div className="bg-white border border-black/10 rounded-2xl p-5 space-y-3 text-xs shadow-xs">
                 <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 text-[#FF6B00] shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
                   <div>
-                    <strong className="text-black block text-xs">Hub Address:</strong>
+                    <strong className="text-black block text-xs">Primary Station Hub:</strong>
                     <span className="text-black/70 block mt-0.5">
                       {VADODARA_CENTRAL_HUB.address}
                     </span>
@@ -507,16 +506,29 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-2 border-t border-black/5">
-                  <Clock className="w-4 h-4 text-[#FF6B00] shrink-0" />
+                  <Clock className="w-4 h-4 text-[#059669] shrink-0" />
                   <span className="text-black/70">
-                    Timings: <strong className="text-black">24 Hours / 7 Days Active</strong>
+                    Timings: <strong className="text-black">{VADODARA_CENTRAL_HUB.timings}</strong>
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-[#FF6B00] shrink-0" />
+                  <Phone className="w-4 h-4 text-[#059669] shrink-0" />
                   <span className="text-black/70">
-                    Direct Line: <strong className="text-black">+91 95468 83777</strong>
+                    Direct Line & WhatsApp: <strong className="text-black">{VED_BUSINESS_CONFIG.phone}</strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="w-4 h-4 text-[#059669] shrink-0 font-bold">@</span>
+                  <span className="text-black/70">
+                    Official Email: <strong className="text-black">{VED_BUSINESS_CONFIG.email}</strong>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2 border-t border-black/5">
+                  <span className="text-black/70 text-[11px]">
+                    Owner / Fleet Lead: <strong className="text-black">{VED_BUSINESS_CONFIG.owner}</strong>
                   </span>
                 </div>
               </div>
@@ -528,67 +540,64 @@ export default function Home() {
                   rel="noopener noreferrer"
                   className="h-11 px-5 rounded-full bg-black hover:bg-black/90 text-white font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-md transition-all cursor-pointer"
                 >
-                  <Compass className="w-4 h-4 text-[#FF6B00]" />
+                  <Compass className="w-4 h-4 text-[#059669]" />
                   <span>Open in Google Maps</span>
                 </a>
 
                 <a
-                  href="https://wa.me/919546883777"
+                  href={`https://wa.me/${VED_BUSINESS_CONFIG.whatsappNumber}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="h-11 px-5 rounded-full border border-black/15 hover:border-black/30 bg-white hover:bg-black/5 text-black font-bold text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer"
                 >
-                  <Phone className="w-4 h-4 text-[#FF6B00]" />
-                  <span>Call Bay Desk</span>
+                  <Phone className="w-4 h-4 text-[#059669]" />
+                  <span>Call {VED_BUSINESS_CONFIG.owner}</span>
                 </a>
               </div>
             </div>
 
-            {/* Right: Doorstep Delivery Coverage Box */}
+            {/* Right: 6 Vadodara Service Locations Coverage Box */}
             <div className="lg:col-span-6 bg-white border border-black/10 rounded-3xl p-6 sm:p-8 space-y-5 shadow-lg">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-[#FF6B00]/10 text-[#FF6B00] flex items-center justify-center font-bold">
-                  <Truck className="w-6 h-6" />
+                <div className="w-11 h-11 rounded-2xl bg-emerald-100 text-[#059669] flex items-center justify-center font-bold">
+                  <MapPin className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="font-bold text-lg text-black">
-                    Doorstep Delivery Available (+₹199)
+                    Our 6 Vadodara Service Points
                   </h3>
                   <p className="text-xs text-black/50">
-                    Delivered directly to your doorstep anywhere in Vadodara.
+                    Select your preferred pickup point or choose doorstep delivery (+₹199).
                   </p>
                 </div>
               </div>
 
-              <p className="text-xs text-black/60 leading-relaxed">
-                Check &quot;Add Doorstep Delivery (+₹199)&quot; when booking any vehicle. Our executive will deliver
-                the machine with your 4-digit OTP handover right to your location:
-              </p>
-
-              <div className="grid grid-cols-2 gap-2 text-xs font-semibold text-black/80">
-                {[
-                  "Alkapuri & RC Dutt Rd",
-                  "Vadodara Junction Platforms",
-                  "Gotri & Sevasi",
-                  "Manjalpur & Makarpura",
-                  "Fatehgunj & MSU Campus",
-                  "Akota & Old Padra Rd",
-                  "Waghodia Highway Corridor",
-                  "Karelibaug & Sama",
-                ].map((area, idx) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {VADODARA_LOCATIONS.map((loc) => (
                   <div
-                    key={idx}
-                    className="bg-[#FAFAF9] p-2.5 rounded-xl border border-black/5 flex items-center gap-2"
+                    key={loc.id}
+                    className="bg-[#FAFAF9] p-3 rounded-2xl border border-black/5 space-y-0.5 hover:border-[#059669]/40 transition-colors"
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#FF6B00] shrink-0" />
-                    <span className="truncate">{area}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-black">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#059669] shrink-0" />
+                        <span>{loc.name}</span>
+                      </div>
+                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        {loc.badge}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-black/50 pl-5">{loc.landmark}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="pt-2 text-[11px] text-black/50 flex items-center gap-2">
-                <Shield className="w-4 h-4 text-[#FF6B00]" />
-                <span>Full tank to full tank policy • 2 Sanitized ISI helmets included with all bikes</span>
+              <div className="pt-2 text-[11px] text-black/50 flex items-center justify-between border-t border-black/5">
+                <div className="flex items-center gap-1.5">
+                  <Shield className="w-4 h-4 text-[#059669]" />
+                  <span>Full tank to full tank policy • 2 Sanitized helmets with bikes</span>
+                </div>
+                <span className="font-bold text-emerald-700">24×7 Available</span>
               </div>
             </div>
           </div>
@@ -888,13 +897,12 @@ export default function Home() {
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                 />
               </div>
-              <h3 className="text-2xl font-bold tracking-tight mb-1 text-black">Marcus Sterling</h3>
+              <h3 className="text-2xl font-bold tracking-tight mb-1 text-black">Shantanu Shekhar</h3>
               <p className="text-[#FF6B00] font-bold uppercase tracking-widest text-xs mb-3">
-                Chief Executive Officer
+                Founder & Fleet Director
               </p>
               <p className="text-black/60 text-sm leading-relaxed">
-                Former automotive executive turned entrepreneur, Marcus brings 15 years of luxury brand
-                experience and an uncompromising standard for quality.
+                Leading Ved Travels Vadodara with an uncompromising focus on transparent slab pricing, verified self-drive vehicles, and direct 24×7 WhatsApp support.
               </p>
             </div>
 
@@ -902,17 +910,16 @@ export default function Home() {
               <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden mb-6 bg-black/5">
                 <img
                   src="/images/leader_2.jpg"
-                  alt="Sophia Chen"
+                  alt="Vadodara Operations Team"
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
                 />
               </div>
-              <h3 className="text-2xl font-bold tracking-tight mb-1 text-black">Sophia Chen</h3>
+              <h3 className="text-2xl font-bold tracking-tight mb-1 text-black">Ved Operations Team</h3>
               <p className="text-[#FF6B00] font-bold uppercase tracking-widest text-xs mb-3">
-                Chief Operating Officer
+                24×7 Ground & Dispatch Team
               </p>
               <p className="text-black/60 text-sm leading-relaxed">
-                A pioneer in operational logistics, Sophia ensures that every vehicle delivery is
-                executed with military precision and white-glove service.
+                Stationed across our 6 Vadodara hubs (Ajwa, Waghodia, Sumandeep, Parul, Railway Station & Airport) ensuring instant 4-digit OTP vehicle handovers and roadside assistance.
               </p>
             </div>
           </div>
@@ -981,20 +988,24 @@ export default function Home() {
                 Fleet Search
               </button>
               <button onClick={() => scrollTo("hub-details")} className="hover:text-black transition-colors cursor-pointer">
-                Sayajigunj Central Hub
+                6 Vadodara Hubs
               </button>
               <button onClick={() => scrollTo("host-section")} className="hover:text-black transition-colors cursor-pointer text-[#059669]">
                 Host & Earn
               </button>
-              <a href="tel:+919546883777" className="hover:text-black transition-colors">
-                24/7 Helpline: +91 95468 83777
+              <a href="tel:+919546883777" className="inline-flex items-center gap-1.5 text-[#059669] hover:underline font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span>24×7 Helpline: +91 95468 83777</span>
+              </a>
+              <a href="mailto:vedtravels0777@gmail.com" className="hover:text-black transition-colors font-medium lowercase">
+                vedtravels0777@gmail.com
               </a>
             </div>
 
             <div className="text-center md:text-right">
-              © 2026 Ved Travels. Vadodara's Premier Self-Drive Fleet & Host Marketplace (GJ-06).<br />
-              <span className="text-black/30 text-[11px]">
-                Opp. Vadodara Junction (Platform 1) & RC Dutt Road, Alkapuri Central
+              © 2026 Ved Travels • Owner & Support Lead: <strong className="text-black">Shantanu Shekhar</strong>.<br />
+              <span className="text-black/40 text-[11px]">
+                Service Hubs: Ajwa Rd • Waghodia Rd • Sumandeep Vidyapith • Parul University • Railway Station • Airport
               </span>
             </div>
           </div>

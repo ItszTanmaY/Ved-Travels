@@ -8,14 +8,14 @@ import { toast } from "sonner";
 
 interface UpiPaymentBoxProps {
   amount: number;
-  utrValue: string;
+  utrValue?: string;
   onUtrChange: (value: string) => void;
   bookingCode?: string;
 }
 
 export function UpiPaymentBox({
   amount,
-  utrValue,
+  utrValue = "",
   onUtrChange,
   bookingCode,
 }: UpiPaymentBoxProps) {

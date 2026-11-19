@@ -10,6 +10,8 @@ import {
   DEMO_HOST,
   DEMO_ADMIN,
   VADODARA_CENTRAL_HUB,
+  VADODARA_LOCATIONS,
+  TariffSlabs,
 } from "@/data/fleet";
 import { toast } from "sonner";
 import {
@@ -27,13 +29,23 @@ export interface DurationOption {
   multiplier: number;
 }
 
+// Exactly matching client's tariff card: 1 Hr, 3 Hrs, 6 Hrs, 12 Hrs, 24 Hrs (1 Day)
 export const DURATION_PRESETS: DurationOption[] = [
-  { id: "6h", label: "6 Hours", hours: 6, isDaily: false, multiplier: 6 },
-  { id: "12h", label: "12 Hours", hours: 12, isDaily: false, multiplier: 12 },
-  { id: "24h", label: "1 Day (24 Hrs)", hours: 24, isDaily: true, multiplier: 1 },
-  { id: "3d", label: "3 Days", hours: 72, isDaily: true, multiplier: 3 },
-  { id: "7d", label: "7 Days (Week)", hours: 168, isDaily: true, multiplier: 7 },
+  { id: "1h", label: "1 Hr", hours: 1, isDaily: false, multiplier: 1 },
+  { id: "3h", label: "3 Hrs", hours: 3, isDaily: false, multiplier: 3 },
+  { id: "6h", label: "6 Hrs", hours: 6, isDaily: false, multiplier: 6 },
+  { id: "12h", label: "12 Hrs", hours: 12, isDaily: false, multiplier: 12 },
+  { id: "24h", label: "24 Hrs (1 Day)", hours: 24, isDaily: true, multiplier: 1 },
 ];
+
+export interface TariffCalculation {
+  baseRent: number;
+  deposit: number;
+  deliveryFee: number;
+  total: number;
+  rateText: string;
+  isMinEnforced: boolean;
+}
 
 interface RentalContextType {
   // Auth
@@ -49,7 +61,12 @@ interface RentalContextType {
   vehicles: Vehicle[];
   toggleVehicleAvailability: (vehicleId: string) => void;
   updateVehiclePricing: (vehicleId: string, hourlyRate: number, dailyRate: number) => void;
-  addVehicle: (newVehicle: Omit<Vehicle, "id" | "rating" | "tripsCount" | "approvalStatus">) => void;
+  addVehicle: (
+    newVehicle: Omit<Vehicle, "id" | "rating" | "tripsCount" | "approvalStatus" | "slabs" | "minHours"> & {
+      slabs?: TariffSlabs;
+      minHours?: number;
+    }
+  ) => void;
   approveVehicle: (vehicleId: string) => void;
   rejectVehicle: (vehicleId: string) => void;
 
@@ -60,6 +77,7 @@ interface RentalContextType {
     vehicle: Vehicle;
     duration: DurationOption;
     doorstepDelivery: boolean;
+    pickupLocation?: string;
     deliveryAddress?: string;
     paymentMode: "upi_advance" | "pay_at_hub";
     upiUtr?: string;
@@ -74,6 +92,8 @@ interface RentalContextType {
   setSearchCategory: (cat: "all" | "bike" | "car") => void;
   selectedDuration: DurationOption;
   setSelectedDuration: (duration: DurationOption) => void;
+  selectedLocation: string;
+  setSelectedLocation: (loc: string) => void;
   doorstepDelivery: boolean;
   setDoorstepDelivery: (val: boolean) => void;
   pickupTime: string;
@@ -86,13 +106,7 @@ interface RentalContextType {
     vehicle: Vehicle,
     duration: DurationOption,
     withDelivery?: boolean
-  ) => {
-    baseRent: number;
-    deposit: number;
-    deliveryFee: number;
-    total: number;
-    rateText: string;
-  };
+  ) => TariffCalculation;
 
   // UI Modal controllers
   authModalOpen: boolean;
@@ -115,9 +129,9 @@ interface RentalContextType {
 
 const RentalContext = createContext<RentalContextType | undefined>(undefined);
 
-const VEHICLES_KEY = "ved_travels_vehicles_v3";
-const BOOKINGS_KEY = "ved_travels_bookings_v3";
-const USER_KEY = "ved_travels_user_v3";
+const VEHICLES_KEY = "ved_travels_vehicles_v4_slabs";
+const BOOKINGS_KEY = "ved_travels_bookings_v4";
+const USER_KEY = "ved_travels_user_v4";
 
 export function RentalProvider({ children }: { children: React.ReactNode }) {
   // State initialization with localStorage fallback
@@ -127,7 +141,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
 
   // Search & Filter
   const [searchCategory, setSearchCategory] = useState<"all" | "bike" | "car">("all");
-  const [selectedDuration, setSelectedDuration] = useState<DurationOption>(DURATION_PRESETS[2]); // 1 Day
+  const [selectedDuration, setSelectedDuration] = useState<DurationOption>(DURATION_PRESETS[4]); // 24 Hrs Default
+  const [selectedLocation, setSelectedLocation] = useState<string>("Vadodara Railway Station");
   const [doorstepDelivery, setDoorstepDelivery] = useState<boolean>(false);
   const [pickupTime, setPickupTime] = useState<string>("09:00 AM Today");
   const [dropTime, setDropTime] = useState<string>("09:00 AM Tomorrow");
@@ -140,7 +155,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [googleSheetsSyncing, setGoogleSheetsSyncing] = useState<boolean>(false);
 
-  // Load from localStorage on client mount
+  // Load from localStorage on client mount & ensure fresh slab-based fleet
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem(USER_KEY);
@@ -148,7 +163,14 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
 
       const storedVehicles = localStorage.getItem(VEHICLES_KEY);
       if (storedVehicles) {
-        setVehicles(JSON.parse(storedVehicles));
+        const parsed = JSON.parse(storedVehicles);
+        // If older cached fleet lacks slabs, force refresh to new official 10 vehicles
+        if (Array.isArray(parsed) && parsed.length === INITIAL_VEHICLES.length && parsed[0]?.slabs) {
+          setVehicles(parsed);
+        } else {
+          setVehicles(INITIAL_VEHICLES);
+          localStorage.setItem(VEHICLES_KEY, JSON.stringify(INITIAL_VEHICLES));
+        }
       } else {
         localStorage.setItem(VEHICLES_KEY, JSON.stringify(INITIAL_VEHICLES));
       }
@@ -247,15 +269,45 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateVehiclePricing = (vehicleId: string, hourlyRate: number, dailyRate: number) => {
-    const updated = vehicles.map((v) =>
-      v.id === vehicleId ? { ...v, hourlyRate, dailyRate } : v
+    const updated: Vehicle[] = vehicles.map((v) =>
+      v.id === vehicleId
+        ? {
+            ...v,
+            hourlyRate,
+            dailyRate,
+            slabs: {
+              ...v.slabs,
+              hr24: dailyRate,
+              hr12: v.slabs.hr12,
+            },
+          }
+        : v
     );
     saveVehicles(updated);
     toast.success("Tariff rates updated!");
   };
 
-  const addVehicle = (newVehicle: Omit<Vehicle, "id" | "rating" | "tripsCount" | "approvalStatus">) => {
+  const addVehicle = (
+    newVehicle: Omit<Vehicle, "id" | "rating" | "tripsCount" | "approvalStatus" | "slabs" | "minHours"> & {
+      slabs?: TariffSlabs;
+      minHours?: number;
+    }
+  ) => {
     const id = `host-veh-${Date.now()}`;
+    const isCar = newVehicle.category === "car";
+    const defaultSlabs: TariffSlabs = newVehicle.slabs || (isCar
+      ? {
+          hr12: Math.round(newVehicle.dailyRate * 0.72) || 2500,
+          hr24: newVehicle.dailyRate || 3500,
+        }
+      : {
+          hr1: newVehicle.hourlyRate || 100,
+          hr3: Math.round((newVehicle.hourlyRate || 100) * 2.6),
+          hr6: Math.round((newVehicle.hourlyRate || 100) * 5.6),
+          hr12: Math.round((newVehicle.hourlyRate || 100) * 10.5),
+          hr24: newVehicle.dailyRate || 1650,
+        });
+
     const vehicleWithMeta: Vehicle = {
       ...newVehicle,
       id,
@@ -264,13 +316,15 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       ownerType: "host",
       approvalStatus: "pending_approval",
       available: false, // Locked until approved by Admin
+      slabs: defaultSlabs,
+      minHours: newVehicle.minHours || (isCar ? 12 : 1),
       bookedSlots: [],
     };
     const updated = [vehicleWithMeta, ...vehicles];
     saveVehicles(updated);
 
     toast.success(`${newVehicle.name} Submitted for Verification!`, {
-      description: "Our Sayajigunj Hub Admin will review and verify your GJ-06 listing.",
+      description: "Our Vadodara Hub Admin will review and verify your GJ-06 listing.",
       duration: 6000,
     });
 
@@ -322,24 +376,53 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  // Pricing calculator: Hourly for < 24h, Daily for 24h+
+  // Official Slab Pricing Engine matching client's exact tariff card
   const calculateTariff = (
     vehicle: Vehicle,
     duration: DurationOption,
     withDelivery: boolean = doorstepDelivery
-  ) => {
+  ): TariffCalculation => {
     let baseRent = 0;
     let rateText = "";
+    const isCar = vehicle.category === "car" || vehicle.minHours >= 12;
 
-    if (duration.hours < 24) {
-      // Under 24 hours: Apply hourly rate
-      baseRent = vehicle.hourlyRate * duration.hours;
-      rateText = `₹${vehicle.hourlyRate}/hr × ${duration.hours} hrs`;
+    if (isCar) {
+      // Smart Car Rule: Cars start at 12 hours minimum
+      if (duration.hours <= 12) {
+        baseRent = vehicle.slabs?.hr12 || (vehicle.hourlyRate * 12);
+        rateText = duration.hours < 12 ? "Min 12 Hrs Package" : "12 Hrs Slab";
+      } else if (duration.hours <= 24) {
+        baseRent = vehicle.slabs?.hr24 || vehicle.dailyRate;
+        rateText = "24 Hrs (1 Day) Slab";
+      } else {
+        const days = Math.max(1, Math.ceil(duration.hours / 24));
+        const dayRate = vehicle.slabs?.hr24 || vehicle.dailyRate;
+        baseRent = dayRate * days;
+        rateText = `₹${dayRate.toLocaleString("en-IN")}/day × ${days} days`;
+      }
     } else {
-      // 24 hours or more: Apply daily rate
-      const days = Math.max(1, Math.round(duration.hours / 24));
-      baseRent = vehicle.dailyRate * days;
-      rateText = `₹${vehicle.dailyRate.toLocaleString("en-IN")}/day × ${days} ${days === 1 ? "day" : "days"}`;
+      // Two-Wheelers: 1h, 3h, 6h, 12h, 24h exact slabs
+      if (duration.hours <= 1) {
+        baseRent = vehicle.slabs?.hr1 ?? vehicle.hourlyRate;
+        rateText = "1 Hr Slab";
+      } else if (duration.hours <= 3) {
+        baseRent = vehicle.slabs?.hr3 ?? (vehicle.hourlyRate * 3);
+        rateText = "3 Hrs Slab";
+      } else if (duration.hours <= 6) {
+        baseRent = vehicle.slabs?.hr6 ?? (vehicle.hourlyRate * 6);
+        rateText = "6 Hrs Slab";
+      } else if (duration.hours <= 12) {
+        baseRent = vehicle.slabs?.hr12 ?? (vehicle.hourlyRate * 12);
+        rateText = "12 Hrs Slab";
+      } else if (duration.hours <= 24) {
+        baseRent = vehicle.slabs?.hr24 ?? vehicle.dailyRate;
+        rateText = "24 Hrs (1 Day) Slab";
+      } else {
+        const days = Math.max(1, Math.ceil(duration.hours / 24));
+        const dayRate = vehicle.slabs?.hr24 ?? vehicle.dailyRate;
+        baseRent = dayRate * days;
+        rateText = `₹${dayRate.toLocaleString("en-IN")}/day × ${days} days`;
+      }
     }
 
     const deliveryFee = withDelivery ? VADODARA_CENTRAL_HUB.deliveryCharge : 0;
@@ -352,6 +435,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       deliveryFee,
       total,
       rateText,
+      isMinEnforced: isCar && duration.hours < 12,
     };
   };
 
@@ -360,6 +444,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     vehicle: Vehicle;
     duration: DurationOption;
     doorstepDelivery: boolean;
+    pickupLocation?: string;
     deliveryAddress?: string;
     paymentMode: "upi_advance" | "pay_at_hub";
     upiUtr?: string;
@@ -387,6 +472,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         ? "pending_offline_verification"
         : "confirmed_pay_at_hub";
 
+    const resolvedLocation = params.pickupLocation || selectedLocation || "Vadodara Railway Station";
+
     const newBooking: Booking = {
       id: `booking-${Date.now()}`,
       bookingCode,
@@ -404,7 +491,10 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       durationLabel: params.duration.label,
       baseRent,
       doorstepDelivery: params.doorstepDelivery,
-      deliveryAddress: params.deliveryAddress || "Vadodara Main Hub",
+      pickupLocation: resolvedLocation,
+      deliveryAddress: params.doorstepDelivery
+        ? params.deliveryAddress || `${resolvedLocation}, Vadodara`
+        : resolvedLocation,
       deliveryFee,
       securityDeposit: deposit,
       totalAmount: total,
@@ -413,8 +503,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       upiUtr: params.upiUtr,
       status,
       createdAt: "Today",
-      hubName: VADODARA_CENTRAL_HUB.name,
-      hubAddress: VADODARA_CENTRAL_HUB.address,
+      hubName: resolvedLocation,
+      hubAddress: `${resolvedLocation}, Vadodara, Gujarat`,
       syncedToGoogleSheets: false,
     };
 
@@ -443,7 +533,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       setGoogleSheetsSyncing(false);
       if (res && res.success) {
         toast.success("Synced to Google Sheets Database!", {
-          description: `Row appended to 'Bookings' spreadsheet for ${newBooking.bookingCode}.`,
+          description: `Row appended to 'Bookings' spreadsheet for ${newBooking.bookingCode} (${resolvedLocation}).`,
         });
         const marked = updatedBookings.map((b) =>
           b.id === newBooking.id ? { ...b, syncedToGoogleSheets: true } : b
@@ -453,21 +543,6 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     });
 
     return newBooking;
-  };
-
-  const verifyOfflineBooking = (bookingId: string) => {
-    const booking = bookings.find((b) => b.id === bookingId);
-    if (!booking) return;
-
-    const updated = bookings.map((b) =>
-      b.id === bookingId ? { ...b, status: "confirmed" as const } : b
-    );
-    saveBookings(updated);
-    updateBookingStatusInGoogleSheets(booking.bookingCode, "confirmed");
-
-    toast.success("Offline Booking Verified & Confirmed!", {
-      description: `Payment confirmed for ${booking.vehicleName}. 4-digit OTP is active for handover.`,
-    });
   };
 
   const verifyHandoverOtp = (bookingId: string, enteredOtp: string) => {
@@ -482,46 +557,64 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         b.id === bookingId ? { ...b, status: "in_trip" as const } : b
       );
       saveBookings(updated);
-      updateBookingStatusInGoogleSheets(booking.bookingCode, "in_trip");
-
-      toast.success("OTP Verified! Trip Handover Commenced", {
-        description: `Vehicle keys handed over to ${booking.renterName}. Machine in trip.`,
+      toast.success("4-Digit OTP Verified!", {
+        description: `Handover successful for ${booking.vehicleName}. Trip is now IN-PROGRESS.`,
       });
+      // Sync update to Google Sheets
+      updateBookingStatusInGoogleSheets(booking.bookingCode, "in_trip");
       return true;
     } else {
-      toast.error("Invalid 4-digit OTP", {
-        description: "Please verify the 4-digit OTP shown in the customer's 'My Trips' console.",
+      toast.error("Invalid 4-Digit OTP", {
+        description: "Please check the OTP on renter's phone and try again.",
       });
       return false;
     }
   };
 
+  const verifyOfflineBooking = (bookingId: string) => {
+    const booking = bookings.find((b) => b.id === bookingId);
+    if (!booking) return;
+
+    const updated = bookings.map((b) =>
+      b.id === bookingId ? { ...b, status: "confirmed" as const } : b
+    );
+    saveBookings(updated);
+    toast.success("Payment Verified & Slot Confirmed!", {
+      description: `Renter ${booking.renterName}'s booking is confirmed. Ready for pickup at ${booking.pickupLocation || booking.hubName}.`,
+    });
+    // Sync to Google Sheets
+    updateBookingStatusInGoogleSheets(booking.bookingCode, "confirmed");
+  };
+
   const cancelBooking = (bookingId: string) => {
-    const target = bookings.find((b) => b.id === bookingId);
+    const booking = bookings.find((b) => b.id === bookingId);
+    if (!booking) return;
+
     const updated = bookings.map((b) =>
       b.id === bookingId ? { ...b, status: "cancelled" as const } : b
     );
     saveBookings(updated);
 
-    if (target) {
-      // Release locked slot on vehicle
-      const updatedVehicles = vehicles.map((v) =>
-        v.id === target.vehicleId
-          ? {
-              ...v,
-              bookedSlots: (v.bookedSlots || []).filter((s) => s.bookingId !== bookingId),
-            }
-          : v
-      );
-      saveVehicles(updatedVehicles);
-    }
+    // Release vehicle slot
+    const updatedVehicles = vehicles.map((v) => {
+      if (v.id === booking.vehicleId && v.bookedSlots) {
+        return {
+          ...v,
+          bookedSlots: v.bookedSlots.filter((s) => s.bookingId !== bookingId),
+        };
+      }
+      return v;
+    });
+    saveVehicles(updatedVehicles);
 
     toast.info("Booking Cancelled", {
-      description: "Time-slot released. 100% deposit refunded to your UPI account.",
+      description: `Time slot released for ${booking.vehicleName}.`,
     });
+    // Sync update to Google Sheets
+    updateBookingStatusInGoogleSheets(booking.bookingCode, "cancelled");
   };
 
-  // Modal actions
+  // UI modal openers
   const openAuthModal = (role: "renter" | "host" | "admin" = "renter") => {
     setAuthModalDefaultRole(role);
     setAuthModalOpen(true);
@@ -534,7 +627,16 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   const openHostDashboard = () => setHostDashboardOpen(true);
   const closeHostDashboard = () => setHostDashboardOpen(false);
 
-  const openBookingModal = (vehicle: Vehicle) => setSelectedVehicle(vehicle);
+  const openBookingModal = (vehicle: Vehicle) => {
+    setSelectedVehicle(vehicle);
+    // Smart Car Rule: Auto-enforce 12h if car is selected and current duration is < 12h
+    if (vehicle.category === "car" && selectedDuration.hours < 12) {
+      setSelectedDuration(DURATION_PRESETS[3]); // 12h
+      toast.info("Cars require minimum 12-hour booking", {
+        description: `Duration automatically set to 12 Hours (${DURATION_PRESETS[3].label}).`,
+      });
+    }
+  };
   const closeBookingModal = () => setSelectedVehicle(null);
 
   return (
@@ -564,6 +666,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         setSearchCategory,
         selectedDuration,
         setSelectedDuration,
+        selectedLocation,
+        setSelectedLocation,
         doorstepDelivery,
         setDoorstepDelivery,
         pickupTime,
