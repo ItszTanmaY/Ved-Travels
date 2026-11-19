@@ -56,11 +56,12 @@ export interface Booking {
   securityDeposit: number;
   totalAmount: number;
   otp: string; // 4-digit handover OTP
-  paymentMode: "upi_advance" | "pay_at_hub";
+  paymentMode: "upi_advance" | "pay_at_hub" | "whatsapp_booking";
   upiUtr?: string;
   status:
     | "pending_offline_verification"
     | "confirmed_pay_at_hub"
+    | "confirmed_whatsapp"
     | "confirmed"
     | "in_trip"
     | "completed"

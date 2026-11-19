@@ -3,6 +3,7 @@ import { Sora } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { RentalProvider } from "@/context/RentalContext";
+import { FloatingWhatsAppSupport } from "@/components/FloatingWhatsAppSupport";
 
 const sora = Sora({
   variable: "--font-sora",
@@ -27,6 +28,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-[#FAFAF9] text-[#1A1A1A] flex flex-col selection:bg-[#FF6B00]/20 selection:text-[#FF6B00] antialiased">
         <RentalProvider>
           {children}
+          <FloatingWhatsAppSupport />
           <Toaster
             position="top-center"
             theme="light"

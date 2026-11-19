@@ -204,10 +204,10 @@ export default function MyTripsModal() {
                           <span>Confirmed • Ready for Handover</span>
                         </span>
                       )}
-                      {booking.status === "confirmed_pay_at_hub" && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200">
-                          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                          <span>Pay at Sayajigunj Hub (Cash/UPI)</span>
+                      {(booking.status === "confirmed_whatsapp" || booking.status === "confirmed_pay_at_hub") && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                          <span>WhatsApp Booking • Pay on Pickup (UPI/Cash)</span>
                         </span>
                       )}
                       {booking.status === "pending_offline_verification" && (
@@ -232,6 +232,7 @@ export default function MyTripsModal() {
 
                   {/* Highlight: 4-DIGIT HANDOVER OTP (shown for all active reservations) */}
                   {(booking.status === "confirmed" ||
+                    booking.status === "confirmed_whatsapp" ||
                     booking.status === "confirmed_pay_at_hub" ||
                     booking.status === "pending_offline_verification") && (
                     <div className="bg-[#1A1A1A] text-white rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
@@ -241,7 +242,7 @@ export default function MyTripsModal() {
                           <span>Handover 4-Digit Security OTP</span>
                         </div>
                         <p className="text-xs text-white/70 mt-0.5">
-                          Present this 4-digit OTP to the hub officer at Sayajigunj Platform 1 to release vehicle keys:
+                          Present this 4-digit OTP at {booking.pickupLocation || "your selected Vadodara hub"} to release vehicle keys:
                         </p>
                       </div>
 

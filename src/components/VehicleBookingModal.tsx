@@ -11,7 +11,6 @@ import {
 } from "@/data/fleet";
 import { useRental, DURATION_PRESETS, DurationOption } from "@/context/RentalContext";
 import { formatINR } from "@/lib/utils";
-import { UpiPaymentBox } from "@/components/UpiPaymentBox";
 import {
   X,
   MapPin,
@@ -31,6 +30,7 @@ import {
   FileSpreadsheet,
   RefreshCw,
   Building2,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -60,9 +60,7 @@ export default function VehicleBookingModal() {
   const [aadhaarInput, setAadhaarInput] = useState(currentUser?.aadhaarNumber || "");
   const [kycFormOpen, setKycFormOpen] = useState(false);
 
-  // Offline Payment states
-  const [paymentMode, setPaymentMode] = useState<"upi_advance" | "pay_at_hub">("upi_advance");
-  const [upiUtr, setUpiUtr] = useState("");
+  // WhatsApp & Direct Booking state
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -107,7 +105,6 @@ export default function VehicleBookingModal() {
 
   const handleClose = () => {
     setConfirmedBooking(null);
-    setUpiUtr("");
     closeBookingModal();
   };
 
@@ -127,14 +124,6 @@ export default function VehicleBookingModal() {
       return;
     }
 
-    if (paymentMode === "upi_advance" && upiUtr.trim().length < 6) {
-      toast.error("Please enter your 12-digit UPI UTR number", {
-        description:
-          "Scan the QR code, pay via UPI, and enter the UTR / Ref Number, or choose 'Pay at Hub'.",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const booking = createBooking({
@@ -145,8 +134,7 @@ export default function VehicleBookingModal() {
         deliveryAddress: doorstepDelivery
           ? deliveryAddress || `${bookingLocation}, Vadodara`
           : undefined,
-        paymentMode,
-        upiUtr: paymentMode === "upi_advance" ? upiUtr.trim() : undefined,
+        paymentMode: "whatsapp_booking",
       });
 
       setConfirmedBooking(booking);
@@ -155,6 +143,12 @@ export default function VehicleBookingModal() {
         description: `4-Digit OTP: ${booking.otp} • Synced to Google Sheets!`,
         duration: 8000,
       });
+
+      // Automatically launch WhatsApp with booking details & 4-digit OTP
+      const waUrl = generateWhatsAppUrl(booking);
+      if (typeof window !== "undefined") {
+        window.open(waUrl, "_blank");
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -174,7 +168,7 @@ export default function VehicleBookingModal() {
         `• *Pickup / Handover Location:* ${b.pickupLocation || b.hubName}\n` +
         `• *Start Date:* ${b.startDate}\n` +
         `• *Doorstep Delivery:* ${b.doorstepDelivery ? `Yes (+₹199) to ${b.deliveryAddress}` : `No (Hub Pickup at ${b.pickupLocation})`}\n` +
-        `• *Payment Mode:* ${b.paymentMode === "upi_advance" ? `UPI Advance (UTR: ${b.upiUtr})` : `Pay Offline at Hub (Cash/UPI)`}\n` +
+        `• *Payment Mode:* Direct via WhatsApp / On Pickup (Cash or UPI)\n` +
         `• *Base Rent:* ${formatINR(b.baseRent)}\n` +
         `• *Refundable Deposit:* ${formatINR(b.securityDeposit)}\n` +
         `• *Total Estimated:* ${formatINR(b.totalAmount)}\n` +
@@ -183,7 +177,7 @@ export default function VehicleBookingModal() {
         `----------------------------------------\n` +
         `• *Customer:* ${b.renterName} (${b.renterPhone})\n` +
         `• *Support Contact:* ${VED_BUSINESS_CONFIG.owner} (${VED_BUSINESS_CONFIG.phone})\n` +
-        `Please keep the machine sanitized & ready for handover.`
+        `Please confirm machine availability & handover details.`
     );
     return `https://wa.me/${VED_BUSINESS_CONFIG.whatsappNumber}?text=${text}`;
   };
@@ -263,22 +257,20 @@ export default function VehicleBookingModal() {
               </p>
             </div>
 
-            {/* Offline Payment Status pill */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl max-w-md mx-auto text-left text-xs space-y-1">
+            {/* WhatsApp & Handover Payment Status pill */}
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl max-w-md mx-auto text-left text-xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-700">Payment Status:</span>
-                <span className="font-bold px-2 py-0.5 rounded-full text-[10px] uppercase bg-amber-100 text-amber-900 border border-amber-200">
-                  {confirmedBooking.paymentMode === "upi_advance" ? "UPI Advance Submitted" : "Pay at Hub / Offline"}
+                <span className="font-bold text-emerald-900">Payment & Handover:</span>
+                <span className="font-bold px-2 py-0.5 rounded-full text-[10px] uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  Direct via WhatsApp
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500">
-                {confirmedBooking.paymentMode === "upi_advance"
-                  ? `UTR: ${confirmedBooking.upiUtr || "Recorded"}. Hub desk will verify upon key handover.`
-                  : "Pay ₹0 online now. Complete total payment in Cash or UPI on vehicle collection."}
+              <p className="text-[11px] text-emerald-700">
+                ₹0 advance gateway charge. Connect on WhatsApp with Shantanu Shekhar (+91 95468 83777) to finalize payment via UPI or Cash on vehicle key handover.
               </p>
             </div>
 
-            {/* Actions: Send to WhatsApp + View in My Trips */}
+            {/* Actions: Send to WhatsApp + Direct Call */}
             <div className="space-y-2.5 max-w-md mx-auto pt-2">
               <a
                 href={currentWaUrl}
@@ -286,19 +278,27 @@ export default function VehicleBookingModal() {
                 rel="noopener noreferrer"
                 className="w-full h-12 rounded-full bg-[#059669] hover:bg-[#047857] active:scale-98 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[#059669]/25 transition-all cursor-pointer"
               >
-                <PhoneCall className="w-4 h-4" />
-                <span>Send Booking to Ved Travels WhatsApp</span>
+                <MessageCircle className="w-4 h-4 fill-white" />
+                <span>Chat with Shantanu on WhatsApp</span>
                 <ExternalLink className="w-3.5 h-3.5 text-white/70" />
               </a>
 
-              <div className="grid grid-cols-2 gap-2">
+              <a
+                href={`tel:${VED_BUSINESS_CONFIG.phone.replace(/[^0-9+]/g, "")}`}
+                className="w-full h-11 rounded-full border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <PhoneCall className="w-4 h-4 text-emerald-600" />
+                <span>Call Shantanu (+91 95468 83777)</span>
+              </a>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     handleClose();
                     openMyTripsModal();
                   }}
-                  className="h-11 rounded-full border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                  className="h-10 rounded-full border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
                 >
                   View in My Trips
                 </button>
@@ -306,7 +306,7 @@ export default function VehicleBookingModal() {
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="h-11 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                  className="h-10 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Done
                 </button>
@@ -532,70 +532,29 @@ export default function VehicleBookingModal() {
               </div>
             </div>
 
-            {/* Offline Payment Mode Selector */}
-            <div className="space-y-3">
-              <label className="text-xs font-bold uppercase tracking-wider text-black/60 block">
-                Choose Payment Mode (100% Free & Direct):
-              </label>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Option 1: Pay Advance via UPI */}
-                <div
-                  onClick={() => setPaymentMode("upi_advance")}
-                  className={`p-4 rounded-2xl border text-left cursor-pointer transition-all ${
-                    paymentMode === "upi_advance"
-                      ? "bg-[#059669]/5 border-[#059669] ring-1 ring-[#059669]"
-                      : "bg-[#FAFAF9] border-black/10 hover:border-black/20"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Smartphone className="w-4 h-4 text-[#059669]" />
-                      <span className="font-bold text-xs text-black">Pay Advance via UPI</span>
-                    </div>
-                    {paymentMode === "upi_advance" && (
-                      <CheckCircle2 className="w-4 h-4 text-[#059669]" />
-                    )}
+            {/* WhatsApp Booking & Direct Payment Notice */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-slate-50 border border-emerald-200 shadow-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-[#059669] flex items-center justify-center text-white shrink-0 shadow-sm">
+                    <MessageCircle className="w-4 h-4 fill-white" />
                   </div>
-                  <p className="text-[11px] text-black/60 leading-relaxed">
-                    Scan QR code, pay rent via PhonePe/GPay/Paytm, and enter UTR to lock slot instantly.
-                  </p>
-                </div>
-
-                {/* Option 2: Pay Offline at Hub */}
-                <div
-                  onClick={() => setPaymentMode("pay_at_hub")}
-                  className={`p-4 rounded-2xl border text-left cursor-pointer transition-all ${
-                    paymentMode === "pay_at_hub"
-                      ? "bg-[#059669]/5 border-[#059669] ring-1 ring-[#059669]"
-                      : "bg-[#FAFAF9] border-black/10 hover:border-black/20"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Banknote className="w-4 h-4 text-[#059669]" />
-                      <span className="font-bold text-xs text-black">Pay Offline at Hub</span>
-                    </div>
-                    {paymentMode === "pay_at_hub" && (
-                      <CheckCircle2 className="w-4 h-4 text-[#059669]" />
-                    )}
+                  <div>
+                    <h5 className="font-extrabold text-xs text-slate-900 tracking-tight">
+                      Direct WhatsApp Booking & Payment
+                    </h5>
+                    <span className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider block">
+                      Zero Gateway Fees • Direct with Shantanu Shekhar
+                    </span>
                   </div>
-                  <p className="text-[11px] text-black/60 leading-relaxed">
-                    ₹0 advance online. Pay total fare + deposit in Cash or UPI when collecting keys at the desk.
-                  </p>
                 </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                  24×7 Active
+                </span>
               </div>
-
-              {/* Dynamic UPI Payment Box if UPI Advance chosen */}
-              {paymentMode === "upi_advance" && (
-                <div className="mt-3">
-                  <UpiPaymentBox
-                    amount={pricing.baseRent + pricing.deliveryFee}
-                    utrValue={upiUtr}
-                    onUtrChange={(utr) => setUpiUtr(utr)}
-                  />
-                </div>
-              )}
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                No payment gateways, Razorpay, or convenience fees. Click below to submit your reservation directly to our official WhatsApp. Pay easily via UPI or Cash on vehicle key handover at <strong className="text-slate-900">{bookingLocation}</strong>.
+              </p>
             </div>
 
             {/* KYC Check note */}
@@ -620,8 +579,8 @@ export default function VehicleBookingModal() {
               )}
             </div>
 
-            {/* Submit Reservation Button */}
-            <div className="pt-2">
+            {/* Submit Reservation via WhatsApp Button */}
+            <div className="pt-2 space-y-2">
               <button
                 type="button"
                 onClick={handleConfirmBooking}
@@ -635,17 +594,22 @@ export default function VehicleBookingModal() {
                   </>
                 ) : (
                   <>
-                    <KeyRound className="w-4 h-4" />
-                    <span>
-                      {paymentMode === "upi_advance"
-                        ? `Lock Machine with UPI UTR (${formatINR(pricing.baseRent + pricing.deliveryFee)})`
-                        : `Confirm & Pay at Hub (${formatINR(pricing.total)})`}
-                    </span>
+                    <MessageCircle className="w-4 h-4 fill-white" />
+                    <span>Book on WhatsApp & Get 4-Digit OTP ({formatINR(pricing.total)})</span>
                   </>
                 )}
               </button>
-              <p className="text-[10px] text-center text-slate-400 mt-2">
-                Generates instant 4-Digit Handover OTP • Live 24×7 Support: {VED_BUSINESS_CONFIG.phone}
+
+              <a
+                href={`tel:${VED_BUSINESS_CONFIG.phone.replace(/[^0-9+]/g, "")}`}
+                className="w-full h-11 rounded-full border border-slate-300 hover:bg-slate-100 active:scale-98 text-slate-800 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs"
+              >
+                <PhoneCall className="w-4 h-4 text-emerald-600" />
+                <span>Call Shantanu for Instant Booking (+91 95468 83777)</span>
+              </a>
+
+              <p className="text-[10px] text-center text-slate-400 mt-1">
+                Generates instant 4-Digit Handover OTP • Synced to Google Sheets • 24×7 Available
               </p>
             </div>
           </div>

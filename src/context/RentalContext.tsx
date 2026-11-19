@@ -79,7 +79,7 @@ interface RentalContextType {
     doorstepDelivery: boolean;
     pickupLocation?: string;
     deliveryAddress?: string;
-    paymentMode: "upi_advance" | "pay_at_hub";
+    paymentMode?: "upi_advance" | "pay_at_hub" | "whatsapp_booking";
     upiUtr?: string;
   }) => Booking;
   verifyHandoverOtp: (bookingId: string, enteredOtp: string) => boolean;
@@ -446,7 +446,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     doorstepDelivery: boolean;
     pickupLocation?: string;
     deliveryAddress?: string;
-    paymentMode: "upi_advance" | "pay_at_hub";
+    paymentMode?: "upi_advance" | "pay_at_hub" | "whatsapp_booking";
     upiUtr?: string;
   }) => {
     // Overlapping double-booking check
@@ -467,9 +467,13 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       params.doorstepDelivery
     );
 
+    const resolvedPaymentMode = params.paymentMode || "whatsapp_booking";
+
     const status: Booking["status"] =
-      params.paymentMode === "upi_advance"
+      resolvedPaymentMode === "upi_advance"
         ? "pending_offline_verification"
+        : resolvedPaymentMode === "whatsapp_booking"
+        ? "confirmed_whatsapp"
         : "confirmed_pay_at_hub";
 
     const resolvedLocation = params.pickupLocation || selectedLocation || "Vadodara Railway Station";
@@ -499,7 +503,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       securityDeposit: deposit,
       totalAmount: total,
       otp,
-      paymentMode: params.paymentMode,
+      paymentMode: resolvedPaymentMode,
       upiUtr: params.upiUtr,
       status,
       createdAt: "Today",
