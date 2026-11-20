@@ -644,11 +644,11 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
 
   const openBookingModal = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
-    // Smart Car Rule: Auto-enforce 12h if car is selected and current duration is < 12h
-    if (vehicle.category === "car" && selectedDuration.hours < 12) {
-      setSelectedDuration(DURATION_PRESETS[3]); // 12h
-      toast.info("Cars require minimum 12-hour booking", {
-        description: `Duration automatically set to 12 Hours (${DURATION_PRESETS[3].label}).`,
+    // Smart Car Rule: Auto-enforce 6h if car is selected and current duration is < 6h
+    if (vehicle.category === "car" && selectedDuration.hours < 6) {
+      setSelectedDuration(DURATION_PRESETS[2]); // 6h
+      toast.info("Cars require minimum 6-hour booking", {
+        description: `Duration automatically set to 6 Hours (${DURATION_PRESETS[2].label}).`,
       });
     }
   };

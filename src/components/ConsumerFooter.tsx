@@ -73,7 +73,7 @@ export default function ConsumerFooter() {
                   onClick={() => scrollTo("fleet-section")}
                   className="hover:text-emerald-600 transition-colors"
                 >
-                  Cars: Min 12h & 24h+ Slabs
+                  Cars: Min 6h, 12h & 24h+ Slabs
                 </button>
               </li>
               <li>

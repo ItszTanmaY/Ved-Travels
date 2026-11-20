@@ -19,7 +19,7 @@ export interface Vehicle {
   hourlyRate: number;
   dailyRate: number;
   slabs: TariffSlabs;
-  minHours: number; // 1 for two-wheelers, 12 for cars
+  minHours: number; // 1 for two-wheelers, 6 for cars
   securityDeposit: number;
   rating: number;
   tripsCount: number;

@@ -35,7 +35,7 @@ export function FloatingSearchWidget() {
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[10px] uppercase font-bold tracking-widest text-[#FF6B00]">
+          <span className="text-[10px] uppercase font-bold tracking-widest text-emerald-400">
             6 VADODARA HUBS ACTIVE
           </span>
           <span className="text-white/30">•</span>
@@ -61,7 +61,7 @@ export function FloatingSearchWidget() {
             className={cn(
               "py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1",
               searchCategory === "bike"
-                ? "bg-[#FF6B00] text-white shadow-xs"
+                ? "bg-emerald-600 text-white shadow-xs"
                 : "text-white/60 hover:text-white"
             )}
           >
@@ -74,7 +74,7 @@ export function FloatingSearchWidget() {
             className={cn(
               "py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1",
               searchCategory === "car"
-                ? "bg-[#FF6B00] text-white shadow-xs"
+                ? "bg-emerald-600 text-white shadow-xs"
                 : "text-white/60 hover:text-white"
             )}
           >
@@ -94,7 +94,7 @@ export function FloatingSearchWidget() {
             className="w-full flex items-center justify-between px-4 py-2.5 gap-3 bg-white/5 hover:bg-white/10 rounded-2xl border border-white/5 transition-all text-left cursor-pointer"
           >
             <div className="flex items-center gap-2.5 min-w-0">
-              <MapPin className="w-4 h-4 text-[#FF6B00] shrink-0" />
+              <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
               <div className="flex flex-col min-w-0">
                 <label className="text-[9px] uppercase font-bold text-white/50 tracking-wider">
                   Pickup / Delivery Hub
@@ -124,7 +124,7 @@ export function FloatingSearchWidget() {
                   className={cn(
                     "w-full px-3 py-2 rounded-xl text-left text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer",
                     selectedLocation === loc.name
-                      ? "bg-[#059669] text-white"
+                      ? "bg-emerald-600 text-white"
                       : "text-white/80 hover:bg-white/10"
                   )}
                 >
@@ -132,7 +132,7 @@ export function FloatingSearchWidget() {
                     <span className="font-bold block">{loc.name}</span>
                     <span className="text-[10px] text-white/50 block">{loc.landmark}</span>
                   </div>
-                  {selectedLocation === loc.name && <CheckCircle2 className="w-3.5 h-3.5" />}
+                  {selectedLocation === loc.name && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
                 </button>
               ))}
             </div>
@@ -153,7 +153,7 @@ export function FloatingSearchWidget() {
                   className={cn(
                     "px-2.5 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer",
                     isSelected
-                      ? "bg-[#FF6B00] text-white shadow-xs"
+                      ? "bg-emerald-600 text-white shadow-xs"
                       : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
                   )}
                 >
@@ -171,12 +171,12 @@ export function FloatingSearchWidget() {
             className={cn(
               "flex-1 flex items-center justify-between px-3 py-2 rounded-2xl border cursor-pointer transition-all",
               doorstepDelivery
-                ? "bg-[#FF6B00]/20 border-[#FF6B00] text-white"
+                ? "bg-emerald-600/25 border-emerald-500 text-white"
                 : "bg-white/5 border-white/5 text-white/70 hover:bg-white/10"
             )}
           >
             <div className="flex items-center gap-1.5 text-left">
-              <Truck className="w-3.5 h-3.5 text-[#FF6B00] shrink-0" />
+              <Truck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <div className="text-[10px] leading-tight">
                 <span className="font-bold block text-white">Doorstep</span>
                 <span className="text-white/50">+₹199</span>
@@ -186,14 +186,14 @@ export function FloatingSearchWidget() {
               type="checkbox"
               checked={doorstepDelivery}
               onChange={(e) => setDoorstepDelivery(e.target.checked)}
-              className="accent-[#FF6B00] w-3.5 h-3.5 cursor-pointer ml-1"
+              className="accent-emerald-600 w-3.5 h-3.5 cursor-pointer ml-1"
             />
           </label>
 
           {/* Search Arrow Button */}
           <button
             type="submit"
-            className="bg-[#FF6B00] hover:bg-[#E56000] text-white p-3.5 rounded-2xl transition-transform hover:scale-105 active:scale-95 shrink-0 flex items-center justify-center shadow-lg shadow-[#FF6B00]/30 cursor-pointer"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white p-3.5 rounded-2xl transition-transform hover:scale-105 active:scale-95 shrink-0 flex items-center justify-center shadow-lg shadow-emerald-600/30 cursor-pointer"
             aria-label="Search Vehicles"
           >
             <ArrowRight className="w-5 h-5" />

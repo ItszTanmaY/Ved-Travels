@@ -99,7 +99,7 @@ export default function Home() {
             className="hidden md:flex absolute top-28 right-6 md:right-16 lg:right-24 z-10 bg-[#1A1A1A]/70 backdrop-blur-2xl border border-white/10 px-5 py-3.5 rounded-3xl shadow-[0_20px_40px_rgba(0,0,0,0.5)] items-center gap-3.5 animate-bounce"
             style={{ animationDuration: "4s" }}
           >
-            <div className="w-10 h-10 rounded-full bg-[#FF6B00] flex items-center justify-center text-white shadow-md shadow-[#FF6B00]/30">
+            <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center text-white shadow-md shadow-amber-500/30">
               <Star className="w-5 h-5 fill-white" />
             </div>
             <div>
@@ -128,10 +128,10 @@ export default function Home() {
           {/* Headline Typography */}
           <div className="relative z-10 max-w-5xl pt-12 md:pt-20">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-white text-xs font-semibold mb-6">
-              <span className="w-2 h-2 rounded-full bg-[#FF6B00] animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span>Vadodara&apos;s #1 Self-Drive Rental Platform</span>
               <span className="text-white/40">•</span>
-              <span className="text-[#FF6B00] font-bold">GJ-06 Fleet</span>
+              <span className="text-emerald-400 font-bold">GJ-06 Fleet</span>
             </div>
 
             <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-[9.5rem] font-bold tracking-tighter text-white mb-6 uppercase leading-[0.9]">
@@ -200,215 +200,99 @@ export default function Home() {
         </section>
 
         {/* ============================================================== */}
-        {/* 3. ASYMMETRIC BENTO GRID: THE COLLECTION (DARK EDITORIAL) */}
+        {/* 3. DAYLIGHT CONSUMER FLEET: ALL 10 VERIFIED VEHICLES */}
         {/* ============================================================== */}
-        <section id="fleet-section" className="px-4 sm:px-6 md:px-8 py-20 scroll-mt-20">
-          <div className="max-w-7xl mx-auto bg-[#0A0A0A] text-white rounded-[3rem] p-6 sm:p-10 md:p-14 shadow-2xl">
+        <section id="fleet-section" className="px-4 sm:px-6 md:px-8 py-16 scroll-mt-20">
+          <div className="max-w-7xl mx-auto">
             {/* Header row */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-14 gap-8">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-6">
               <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-bold text-[#FF6B00] mb-3">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] animate-pulse" />
-                  <span>VADODARA CENTRAL HUB INVENTORY</span>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 mb-3">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>AVAILABLE IN VADODARA • INSTANT KEY HANDOVER</span>
                 </div>
-                <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4 leading-[0.9]">
-                  THE
-                  <br />
-                  COLLECTION
+                <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-3">
+                  Self-Drive Fleet in Vadodara
                 </h2>
-                <p className="text-white/50 text-base md:text-xl font-light">
-                  Iconic machines. Ready for your command across Gujarat.
+                <p className="text-slate-600 text-sm sm:text-base font-normal max-w-2xl leading-relaxed">
+                  Choose from 10 verified, mint-condition vehicles with active FASTag. Hourly & daily tariff slabs starting at 1 Hr (Bikes & Scooters) and 6 Hrs (Cars).
                 </p>
               </div>
 
-              {/* Category pills & duration display */}
-              <div className="flex flex-col items-start md:items-end gap-3 w-full md:w-auto">
-                <div className="text-right hidden md:block">
-                  <span className="text-[10px] uppercase font-bold text-white/40 tracking-wider block">
-                    CURRENT PRICING BASIS
-                  </span>
-                  <span className="text-xs font-bold text-[#FF6B00]">
-                    {selectedDuration.label.toUpperCase()}
-                    {doorstepDelivery ? " • DOORSTEP DELIVERY (+₹199)" : " • FREE CENTRAL HUB"}
-                  </span>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 bg-white/5 p-1.5 rounded-2xl border border-white/10 w-full sm:w-auto">
-                  <button
-                    type="button"
-                    onClick={() => setSearchCategory("all")}
-                    className={cn(
-                      "px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                      searchCategory === "all"
-                        ? "bg-white text-black shadow-md"
-                        : "text-white/60 hover:text-white"
-                    )}
-                  >
-                    All Fleet ({vehicles.length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSearchCategory("bike")}
-                    className={cn(
-                      "px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                      searchCategory === "bike"
-                        ? "bg-[#FF6B00] text-white shadow-md"
-                        : "text-white/60 hover:text-white"
-                    )}
-                  >
-                    Bikes & Scooters ({vehicles.filter((v) => v.category === "bike").length})
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSearchCategory("car")}
-                    className={cn(
-                      "px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer",
-                      searchCategory === "car"
-                        ? "bg-[#FF6B00] text-white shadow-md"
-                        : "text-white/60 hover:text-white"
-                    )}
-                  >
-                    Self-Drive Cars ({vehicles.filter((v) => v.category === "car").length})
-                  </button>
-                </div>
+              {/* Pricing basis info */}
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 bg-white px-4 py-2.5 rounded-2xl border border-slate-200 shadow-xs self-start md:self-auto">
+                <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Pricing Basis: <strong className="text-slate-900">{selectedDuration.label} Slab</strong></span>
+                <span className="text-slate-300">•</span>
+                <span className="text-emerald-700 font-bold">{doorstepDelivery ? "Doorstep (+₹199)" : "Free Hub Pickup"}</span>
               </div>
             </div>
 
-            {/* Asymmetric Hero Bento Showcase */}
-            {filteredVehicles.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-8">
-                {/* Massive Hero Card (Spans 8 cols) - Mobile Optimized */}
-                <div
-                  onClick={() => openBookingModal(filteredVehicles[0])}
-                  className="md:col-span-8 group cursor-pointer relative rounded-3xl overflow-hidden min-h-[460px] sm:min-h-[500px] md:h-[540px] bg-[#161616] border border-white/10 hover:border-[#FF6B00]/70 transition-all shadow-xl flex flex-col justify-between p-5 sm:p-7 md:p-8"
+            {/* Category Filter Pills Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-8 pb-6 border-b border-slate-200/80">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSearchCategory("all")}
+                  className={cn(
+                    "px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                    searchCategory === "all"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                  )}
                 >
-                  <img
-                    src={filteredVehicles[0].images[0]}
-                    alt={filteredVehicles[0].name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-black/25" />
+                  All Vehicles ({vehicles.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchCategory("bike")}
+                  className={cn(
+                    "px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                    searchCategory === "bike"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  Bikes & Scooters ({vehicles.filter((v) => v.category === "bike").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchCategory("car")}
+                  className={cn(
+                    "px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border",
+                    searchCategory === "car"
+                      ? "bg-emerald-600 text-white border-emerald-600 shadow-sm"
+                      : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                  )}
+                >
+                  Self-Drive Cars ({vehicles.filter((v) => v.category === "car").length})
+                </button>
+              </div>
 
-                  {/* Top Bar Badges */}
-                  <div className="relative z-10 flex justify-between items-center gap-2">
-                    <div className="inline-flex items-center bg-white px-3 py-1 rounded-full text-black text-xs font-bold shadow-md">
-                      <span className="text-[9px] text-blue-700 font-black mr-1">IND</span>
-                      <span>{filteredVehicles[0].plate}</span>
-                    </div>
+              <div className="text-xs text-slate-500 font-medium">
+                Showing <strong className="text-slate-900 font-bold">{filteredVehicles.length}</strong> available vehicles
+              </div>
+            </div>
 
-                    <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white border border-white/10 flex items-center gap-1.5 shadow-sm">
-                      <Star className="w-3.5 h-3.5 text-[#FF6B00] fill-[#FF6B00]" />
-                      <span>{filteredVehicles[0].rating} ({filteredVehicles[0].tripsCount} trips)</span>
-                    </div>
-                  </div>
+            {/* Unified Daylight Fleet Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              {filteredVehicles.map((vehicle) => (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} />
+              ))}
+            </div>
 
-                  {/* Bottom Content Area with dedicated non-overlapping button row */}
-                  <div className="relative z-10 space-y-3">
-                    <div>
-                      <div className="text-white/70 uppercase tracking-widest text-[10px] sm:text-xs mb-1 font-bold">
-                        {filteredVehicles[0].brand} • {filteredVehicles[0].transmission} • {filteredVehicles[0].fuel}
-                      </div>
-                      <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight text-white group-hover:text-[#FF6B00] transition-colors">
-                        {filteredVehicles[0].name}
-                      </h3>
-                      <p className="text-white/60 text-xs mt-1">
-                        Vadodara Central Hub • Fastag Enabled • Free Helmets & Sanitized
-                      </p>
-                    </div>
-
-                    {/* Dedicated Price & Book Button Row */}
-                    <div className="pt-3 border-t border-white/10 flex flex-wrap items-end justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-[10px] text-white/50 uppercase font-bold tracking-wider">
-                          Rent for {selectedDuration.label}
-                        </div>
-                        <div className="flex items-baseline gap-1.5 flex-wrap">
-                          <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#FF6B00] tabular-nums">
-                            {formatINR(
-                              selectedDuration.isDaily
-                                ? filteredVehicles[0].dailyRate * selectedDuration.multiplier
-                                : filteredVehicles[0].hourlyRate * selectedDuration.hours
-                            )}
-                          </span>
-                          <span className="text-xs text-white/50">
-                            ({formatINR(filteredVehicles[0].dailyRate)}/day • {formatINR(filteredVehicles[0].hourlyRate)}/hr)
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="shrink-0">
-                        <span className="h-10 px-4 rounded-xl bg-[#FF6B00] hover:bg-[#E56000] text-white font-bold text-xs uppercase tracking-wider inline-flex items-center gap-1.5 shadow-lg shadow-[#FF6B00]/30 transition-transform active:scale-95">
-                          <span>Book Now</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Stacked Cards (4 cols) - Mobile Optimized */}
-                <div className="md:col-span-4 flex flex-col gap-6">
-                  {filteredVehicles.slice(1, 3).map((vehicle) => (
-                    <div
-                      key={vehicle.id}
-                      onClick={() => openBookingModal(vehicle)}
-                      className="group cursor-pointer relative rounded-3xl overflow-hidden min-h-[220px] sm:min-h-[240px] md:flex-1 bg-[#161616] border border-white/10 hover:border-[#FF6B00]/70 transition-all shadow-xl flex flex-col justify-between p-4 sm:p-5"
-                    >
-                      <img
-                        src={vehicle.images[0]}
-                        alt={vehicle.name}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/20" />
-
-                      <div className="relative z-10 flex justify-between items-center gap-2">
-                        <span className="text-[10px] bg-white text-black font-bold px-2 py-0.5 rounded-full shadow-sm">
-                          {vehicle.plate}
-                        </span>
-                        <span className="text-[10px] bg-black/80 text-white font-bold px-2 py-0.5 rounded-full border border-white/10 flex items-center gap-1 shadow-sm">
-                          <Star className="w-3 h-3 text-[#FF6B00] fill-[#FF6B00]" />
-                          <span>{vehicle.rating}</span>
-                        </span>
-                      </div>
-
-                      <div className="relative z-10">
-                        <div className="text-[10px] text-white/60 font-semibold uppercase tracking-wider mb-0.5">
-                          {vehicle.brand} • {vehicle.fuel}
-                        </div>
-                        <h4 className="text-base sm:text-lg font-bold mb-1 text-white group-hover:text-[#FF6B00] transition-colors leading-tight">
-                          {vehicle.name}
-                        </h4>
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-lg sm:text-xl font-bold text-[#FF6B00] tabular-nums">
-                            {formatINR(
-                              selectedDuration.isDaily
-                                ? vehicle.dailyRate * selectedDuration.multiplier
-                                : vehicle.hourlyRate * selectedDuration.hours
-                            )}
-                          </span>
-                          <span className="text-xs text-white/50">
-                            for {selectedDuration.label}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {filteredVehicles.length === 0 && (
+              <div className="text-center py-16 bg-white rounded-3xl border border-slate-200 p-8 shadow-xs">
+                <p className="text-slate-600 text-sm">No vehicles found in this category.</p>
+                <button
+                  type="button"
+                  onClick={() => setSearchCategory("all")}
+                  className="mt-4 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-colors cursor-pointer"
+                >
+                  View All Vehicles
+                </button>
               </div>
             )}
-
-            {/* Remaining Vehicles Grid */}
-            <div className="mt-8 pt-8 border-t border-white/10">
-              <h4 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-6">
-                All Available Fleet Machines ({filteredVehicles.length})
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredVehicles.slice(3).map((vehicle) => (
-                  <VehicleCard key={vehicle.id} vehicle={vehicle} />
-                ))}
-              </div>
-            </div>
           </div>
         </section>
 
@@ -420,7 +304,7 @@ export default function Home() {
         {/* ============================================================== */}
         <section id="how-it-works" className="px-6 py-20 max-w-7xl mx-auto border-t border-black/5">
           <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#FF6B00]">
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-700">
               ZERO-COUNTER PROCESS
             </span>
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-black">
@@ -456,7 +340,7 @@ export default function Home() {
             ].map((step, i) => (
               <div
                 key={i}
-                className="bg-white p-7 rounded-3xl border border-black/5 shadow-xs hover:shadow-lg hover:border-[#FF6B00]/40 transition-all flex flex-col justify-between"
+                className="bg-white p-7 rounded-3xl border border-black/5 shadow-xs hover:shadow-lg hover:border-emerald-500/40 transition-all flex flex-col justify-between"
               >
                 <div>
                   <div className="text-4xl font-extrabold text-black/15 mb-4 font-mono">
@@ -617,13 +501,13 @@ export default function Home() {
         {/* ============================================================== */}
         <section id="host-section" className="px-6 py-20 max-w-7xl mx-auto border-t border-black/5">
           <div className="max-w-3xl mb-12 space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF6B00]/10 text-[#FF6B00] text-xs font-bold">
-              <Sparkles className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 text-amber-700 text-xs font-bold border border-amber-200">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
               <span>VED HOST PARTNER MARKETPLACE</span>
             </div>
 
             <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-black">
-              Earn Up To <span className="text-[#FF6B00]">₹75,000 / Month</span> Sharing Your Vehicle
+              Earn Up To <span className="text-emerald-700">₹75,000 / Month</span> Sharing Your Vehicle
             </h2>
 
             <p className="text-sm sm:text-base text-black/50 font-light">
@@ -646,7 +530,7 @@ export default function Home() {
                     className={cn(
                       "p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3",
                       hostVehicleType === "bike"
-                        ? "bg-[#FF6B00]/5 border-[#FF6B00] ring-1 ring-[#FF6B00]"
+                        ? "bg-emerald-50 border-emerald-600 ring-1 ring-emerald-600"
                         : "bg-white border-black/10 hover:border-black/30"
                     )}
                   >
@@ -654,7 +538,7 @@ export default function Home() {
                       className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm",
                         hostVehicleType === "bike"
-                          ? "bg-[#FF6B00] text-white"
+                          ? "bg-emerald-600 text-white"
                           : "bg-black/5 text-black"
                       )}
                     >
@@ -672,7 +556,7 @@ export default function Home() {
                     className={cn(
                       "p-4 rounded-2xl border text-left transition-all cursor-pointer flex items-center gap-3",
                       hostVehicleType === "car"
-                        ? "bg-[#FF6B00]/5 border-[#FF6B00] ring-1 ring-[#FF6B00]"
+                        ? "bg-emerald-50 border-emerald-600 ring-1 ring-emerald-600"
                         : "bg-white border-black/10 hover:border-black/30"
                     )}
                   >
@@ -680,7 +564,7 @@ export default function Home() {
                       className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm",
                         hostVehicleType === "car"
-                          ? "bg-[#FF6B00] text-white"
+                          ? "bg-emerald-600 text-white"
                           : "bg-black/5 text-black"
                       )}
                     >
@@ -703,7 +587,7 @@ export default function Home() {
                     </span>
                     <p className="text-xs text-black/50">Adjust how many days your vehicle is available</p>
                   </div>
-                  <div className="text-2xl font-bold text-[#FF6B00]">
+                  <div className="text-2xl font-bold text-emerald-700">
                     {hostDays} <span className="text-sm font-normal text-black/40">DAYS</span>
                   </div>
                 </div>
@@ -714,7 +598,7 @@ export default function Home() {
                   max={25}
                   value={hostDays}
                   onChange={(e) => setHostDays(Number(e.target.value))}
-                  className="w-full h-2.5 bg-black/10 rounded-lg appearance-none cursor-pointer accent-[#FF6B00]"
+                  className="w-full h-2.5 bg-black/10 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                 />
 
                 <div className="flex justify-between text-[11px] text-black/40 font-semibold">
@@ -729,19 +613,19 @@ export default function Home() {
               {/* Perks */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-black/5 text-xs">
                 <div className="bg-[#FAFAF9] p-3 rounded-xl border border-black/5">
-                  <Shield className="w-4 h-4 text-[#FF6B00] mb-1" />
+                  <Shield className="w-4 h-4 text-emerald-600 mb-1" />
                   <span className="font-bold text-black block">₹10 Lakh Cover</span>
                   <span className="text-[11px] text-black/50">Commercial insurance</span>
                 </div>
 
                 <div className="bg-[#FAFAF9] p-3 rounded-xl border border-black/5">
-                  <MapPin className="w-4 h-4 text-[#FF6B00] mb-1" />
+                  <MapPin className="w-4 h-4 text-emerald-600 mb-1" />
                   <span className="font-bold text-black block">Free Doorstep GPS</span>
                   <span className="text-[11px] text-black/50">Fitted in Vadodara</span>
                 </div>
 
                 <div className="bg-[#FAFAF9] p-3 rounded-xl border border-black/5">
-                  <CheckCircle2 className="w-4 h-4 text-[#FF6B00] mb-1" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 mb-1" />
                   <span className="font-bold text-black block">Verified Drivers</span>
                   <span className="text-[11px] text-black/50">DigiLocker RTO checked</span>
                 </div>
@@ -749,9 +633,9 @@ export default function Home() {
             </div>
 
             {/* Right Metrics Display Card */}
-            <div className="lg:col-span-5 bg-[#1A1A1A] text-white border border-white/10 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between space-y-6">
+            <div className="lg:col-span-5 bg-slate-900 text-white border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col justify-between space-y-6">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#FF6B00] bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-800/80">
                   ESTIMATED MONTHLY EARNINGS
                 </span>
 
@@ -774,7 +658,7 @@ export default function Home() {
                     <span className="text-xs font-bold text-white/50 uppercase block">
                       Net Monthly Payout to Your Bank:
                     </span>
-                    <div className="text-4xl sm:text-5xl font-bold text-[#FF6B00] tracking-tight mt-1 tabular-nums">
+                    <div className="text-4xl sm:text-5xl font-bold text-emerald-400 tracking-tight mt-1 tabular-nums">
                       {formatINR(netMonthly)}
                       <span className="text-sm font-normal text-white/40"> /mo</span>
                     </div>
@@ -798,7 +682,7 @@ export default function Home() {
                     openAuthModal("host");
                   }
                 }}
-                className="w-full h-12 rounded-full bg-[#FF6B00] hover:bg-[#E56000] text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-[#FF6B00]/30 transition-all cursor-pointer"
+                className="w-full h-12 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 transition-all cursor-pointer"
               >
                 <span>{currentUser?.role === "host" ? "Open Host Dashboard" : "Attach My Vehicle (2 Mins)"}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -823,7 +707,7 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             <div className="flex flex-col gap-6 p-8 md:p-10 bg-[#FAFAF9] rounded-3xl border border-black/5 hover:bg-white hover:shadow-2xl transition-all duration-500 group">
-              <div className="text-[#FF6B00] text-6xl font-serif leading-none opacity-50">&quot;</div>
+              <div className="text-emerald-600 text-6xl font-serif leading-none opacity-40">&quot;</div>
               <p className="text-lg md:text-xl font-light leading-relaxed text-black">
                 The 4-digit OTP handover at Sayajigunj Hub took literally 3 minutes. The Classic 350 was
                 in immaculate condition with full tank and dual ISI helmets. Zero deposit hassle and instant WhatsApp confirmation!
@@ -837,14 +721,14 @@ export default function Home() {
                 </div>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="w-4 h-4 text-[#FF6B00] fill-[#FF6B00]" />
+                    <Star key={i} className="w-4 h-4 text-amber-500 fill-amber-500" />
                   ))}
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col gap-6 p-8 md:p-10 bg-[#FAFAF9] rounded-3xl border border-black/5 hover:bg-white hover:shadow-2xl transition-all duration-500 group md:translate-y-8">
-              <div className="text-[#FF6B00] text-6xl font-serif leading-none opacity-50">&quot;</div>
+              <div className="text-emerald-600 text-6xl font-serif leading-none opacity-40">&quot;</div>
               <p className="text-lg md:text-xl font-light leading-relaxed text-black">
                 Outstanding service. Having doorstep delivery to our home in Alkapuri made our weekend trip completely stress-free. The Swift was spotless with working FASTag.
               </p>
@@ -857,7 +741,7 @@ export default function Home() {
                 </div>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} className="w-4 h-4 text-[#FF6B00] fill-[#FF6B00]" />
+                    <Star key={i} className="w-4 h-4 text-amber-500 fill-amber-500" />
                   ))}
                 </div>
               </div>
@@ -866,9 +750,9 @@ export default function Home() {
         </section>
 
         {/* ============================================================== */}
-        {/* 8. GLOBAL CTA SECTION (EXACT ORANGE BANNER VIBE) */}
+        {/* 8. GLOBAL CTA SECTION (CLEAN EMERALD DAYLIGHT BANNER) */}
         {/* ============================================================== */}
-        <section className="px-6 py-28 md:py-36 bg-[#FF6B00] text-white text-center relative overflow-hidden rounded-[3rem] mx-4 md:mx-8 mb-20 shadow-2xl">
+        <section className="px-6 py-24 md:py-32 bg-gradient-to-br from-emerald-700 via-emerald-800 to-teal-900 text-white text-center relative overflow-hidden rounded-[3rem] mx-4 md:mx-8 mb-20 shadow-2xl">
           <div
             className="absolute top-0 left-0 w-full h-full opacity-10"
             style={{
@@ -879,21 +763,21 @@ export default function Home() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/10 blur-[120px] rounded-full pointer-events-none" />
 
           <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center">
-            <h2 className="text-6xl md:text-8xl font-bold tracking-tighter mb-6 leading-[0.9]">
+            <h2 className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-6 leading-[0.95]">
               READY TO
               <br />
               DRIVE?
             </h2>
-            <p className="text-lg md:text-2xl font-light mb-10 text-white/90 max-w-2xl">
+            <p className="text-base md:text-xl font-light mb-10 text-white/90 max-w-2xl">
               Experience the pinnacle of automotive freedom in Vadodara today. Your verified vehicle awaits.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <button
                 type="button"
                 onClick={() => scrollTo("fleet-section")}
-                className="bg-white text-black hover:bg-white/95 px-10 py-4 rounded-full font-bold text-base uppercase tracking-widest transition-transform hover:scale-105 active:scale-95 shadow-[0_20px_40px_rgba(0,0,0,0.3)] cursor-pointer"
+                className="bg-white text-emerald-950 hover:bg-slate-100 px-10 py-4 rounded-full font-bold text-base uppercase tracking-widest transition-transform hover:scale-105 active:scale-95 shadow-xl cursor-pointer"
               >
-                Book Machine Now
+                Book Vehicle Now
               </button>
               <button
                 type="button"
@@ -904,7 +788,7 @@ export default function Home() {
                     openAuthModal("host");
                   }
                 }}
-                className="bg-black text-white hover:bg-black/80 px-8 py-4 rounded-full font-bold text-sm uppercase tracking-widest transition-transform hover:scale-105 active:scale-95 border border-white/20 cursor-pointer"
+                className="bg-emerald-950/80 text-white hover:bg-emerald-950 px-8 py-4 rounded-full font-bold text-sm uppercase tracking-widest transition-transform hover:scale-105 active:scale-95 border border-white/20 cursor-pointer"
               >
                 Attach Your Vehicle
               </button>

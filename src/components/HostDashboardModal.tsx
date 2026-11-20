@@ -136,7 +136,7 @@ export default function HostDashboardModal() {
           hr12: Math.round(Number(newDailyRate) * 0.7),
           hr24: Number(newDailyRate),
         },
-        minHours: newCategory === "car" ? 12 : 1,
+        minHours: newCategory === "car" ? 6 : 1,
         securityDeposit: Number(newDeposit),
         ownerType: "host",
         hostId: currentUser?.id || "demo-host-1",

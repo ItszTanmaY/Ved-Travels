@@ -71,12 +71,12 @@ export default function VehicleBookingModal() {
     }
   }, [selectedLocation]);
 
-  // Smart Car Rule: Enforce min 12h for cars
+  // Smart Car Rule: Enforce min 6h for cars
   useEffect(() => {
-    if (selectedVehicle && selectedVehicle.category === "car" && selectedDuration.hours < 12) {
-      const twelveH = DURATION_PRESETS.find((d) => d.hours === 12);
-      if (twelveH) {
-        setSelectedDuration(twelveH);
+    if (selectedVehicle && selectedVehicle.category === "car" && selectedDuration.hours < 6) {
+      const sixH = DURATION_PRESETS.find((d) => d.hours === 6) || DURATION_PRESETS.find((d) => d.hours === 12);
+      if (sixH) {
+        setSelectedDuration(sixH);
       }
     }
   }, [selectedVehicle, selectedDuration, setSelectedDuration]);
@@ -338,7 +338,7 @@ export default function VehicleBookingModal() {
                 </p>
                 {isCar && (
                   <span className="inline-block text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200 mt-1">
-                    Car Package: Min 12 Hours Duration
+                    Car Package: Min 6 Hours Duration
                   </span>
                 )}
               </div>
@@ -353,12 +353,12 @@ export default function VehicleBookingModal() {
                 </label>
                 {isCar && (
                   <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                    Cars: 12h or 24h+ only
+                    Cars: Min 6 Hrs Slab
                   </span>
                 )}
               </div>
 
-              <div className={`grid ${isCar ? "grid-cols-2" : "grid-cols-3 sm:grid-cols-5"} gap-1.5`}>
+              <div className={`grid ${isCar ? "grid-cols-3" : "grid-cols-3 sm:grid-cols-5"} gap-1.5`}>
                 {availablePresets.map((p) => (
                   <button
                     key={p.id}

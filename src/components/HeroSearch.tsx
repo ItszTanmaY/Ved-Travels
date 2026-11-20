@@ -147,7 +147,7 @@ export default function HeroSearch() {
                 <span>2. Select Tariff Slab Duration:</span>
               </span>
               <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                Cars start at Min 12 Hrs slab
+                Cars start at Min 6 Hrs slab
               </span>
             </div>
 

@@ -83,60 +83,21 @@ export default function AuthModal() {
           <X className="w-4 h-4 stroke-[2.5]" />
         </button>
 
-        {/* 1-Click Quick Demo Login Section */}
-        <div className="mb-6 bg-[#FAFAF9] border border-black/10 rounded-2xl p-4">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-black mb-2">
-            <Zap className="w-3.5 h-3.5 text-[#059669] fill-[#059669]" />
-            <span>INSTANT DEMO ACCOUNTS (1-CLICK TEST)</span>
-          </div>
-          <p className="text-[11px] text-black/60 mb-3">
-            Switch between Renter, Host, and Fleet Admin accounts instantly:
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={loginAsDemoRenter}
-              className="py-2.5 px-2 rounded-xl bg-white hover:bg-black/5 border border-black/15 text-black font-bold text-[11px] flex flex-col items-center justify-center gap-1 transition-all shadow-xs cursor-pointer text-center"
-            >
-              <User className="w-4 h-4 text-[#059669]" />
-              <span>Renter</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={loginAsDemoHost}
-              className="py-2.5 px-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 font-bold text-[11px] flex flex-col items-center justify-center gap-1 transition-all shadow-xs cursor-pointer text-center"
-            >
-              <Sparkles className="w-4 h-4 text-amber-600" />
-              <span>Host Partner</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={loginAsDemoAdmin}
-              className="py-2.5 px-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] flex flex-col items-center justify-center gap-1 transition-all shadow-xs cursor-pointer text-center"
-            >
-              <CheckCircle className="w-4 h-4 text-white" />
-              <span>Admin Desk</span>
-            </button>
-          </div>
-        </div>
-
         {/* Role Toggle Switcher */}
-        <div className="grid grid-cols-2 gap-1.5 bg-black/5 p-1 rounded-2xl mb-6">
+        <div className="grid grid-cols-2 gap-1.5 bg-slate-100 p-1.5 rounded-2xl mb-6">
           <button
             type="button"
             onClick={() => {
               setActiveTab("renter");
               setOtpSent(false);
             }}
-            className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+            className={`py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
               activeTab === "renter"
-                ? "bg-white text-black shadow-xs"
-                : "text-black/60 hover:text-black"
+                ? "bg-white text-emerald-950 shadow-xs font-extrabold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            I Want to Rent
+            Renter Login
           </button>
           <button
             type="button"
@@ -144,31 +105,31 @@ export default function AuthModal() {
               setActiveTab("host");
               setOtpSent(false);
             }}
-            className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+            className={`py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
               activeTab === "host"
-                ? "bg-black text-white shadow-xs"
-                : "text-black/60 hover:text-black"
+                ? "bg-white text-emerald-950 shadow-xs font-extrabold"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            I Want to Host & Earn
+            Host Partner Login
           </button>
         </div>
 
         {/* Title */}
         <div className="mb-6">
-          <h3 className="text-xl font-bold tracking-tight text-black">
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
             {activeTab === "host"
-              ? "Host Partner Login & Portal"
+              ? "Host Partner Portal"
               : activeTab === "admin"
-              ? "Ved Travels Fleet Operations Desk"
-              : "Login to Ved Travels Vadodara"}
+              ? "Ved Travels Fleet Desk"
+              : "Login to Ved Travels"}
           </h3>
-          <p className="text-xs text-black/60 font-medium mt-1">
+          <p className="text-xs text-slate-500 font-medium mt-1">
             {activeTab === "host"
-              ? "Manage your listed bikes & cars and view weekly payouts."
+              ? "Manage your listed bikes & cars and view weekly earnings."
               : activeTab === "admin"
-              ? "Verify host vehicle submissions and publish to the live fleet."
-              : "Access your 4-digit handover OTP and active trips."}
+              ? "Verify host vehicle submissions and fleet availability."
+              : "Access your bookings, 4-digit handover OTP, and trip receipts."}
           </p>
         </div>
 
@@ -176,8 +137,8 @@ export default function AuthModal() {
         {!otpSent ? (
           <form onSubmit={handleSendOtp} className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-black/70 block mb-1">
-                Your Full Name
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                Full Name
               </label>
               <input
                 type="text"
@@ -185,16 +146,16 @@ export default function AuthModal() {
                 placeholder="e.g. Parth Patel"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full h-11 px-3.5 bg-[#FAFAF9] border border-black/10 rounded-xl text-xs text-black focus:bg-white focus:border-[#FF6B00] focus:outline-hidden"
+                className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-hidden"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-black/70 block mb-1">
-                10-Digit Mobile Number (Vadodara)
+              <label className="text-xs font-bold text-slate-700 block mb-1">
+                10-Digit Mobile Number
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-3 text-xs font-bold text-black/40">
+                <span className="absolute left-3.5 top-3 text-xs font-bold text-slate-400">
                   +91
                 </span>
                 <input
@@ -203,27 +164,27 @@ export default function AuthModal() {
                   placeholder="95468 XXXXX"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full h-11 pl-12 pr-3.5 bg-[#FAFAF9] border border-black/10 rounded-xl text-xs font-mono text-black focus:bg-white focus:border-[#FF6B00] focus:outline-hidden"
+                  className="w-full h-11 pl-12 pr-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-hidden"
                 />
               </div>
             </div>
 
             <button
               type="submit"
-              className="w-full h-12 rounded-full bg-black hover:bg-black/90 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+              className="w-full h-12 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
             >
               <span>Send OTP Verification</span>
-              <ArrowRight className="w-4 h-4 text-[#FF6B00]" />
+              <ArrowRight className="w-4 h-4 text-white" />
             </button>
           </form>
         ) : (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
-            <div className="p-3 bg-[#FAFAF9] rounded-xl border border-black/10 text-xs text-black/70">
-              OTP sent to +91 {phoneNumber}. (Enter demo code <strong className="text-[#FF6B00]">1234</strong>)
+            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900">
+              OTP sent to +91 {phoneNumber}. (Enter verification code <strong className="text-emerald-700 font-mono font-bold">1234</strong>)
             </div>
 
             <div>
-              <label className="text-xs font-bold text-black/70 block mb-1">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
                 Enter 4-Digit OTP
               </label>
               <input
@@ -233,27 +194,60 @@ export default function AuthModal() {
                 placeholder="1234"
                 value={enteredOtp}
                 onChange={(e) => setEnteredOtp(e.target.value)}
-                className="w-full h-12 text-center text-xl font-mono font-bold tracking-widest bg-[#FAFAF9] border border-black/10 rounded-xl focus:bg-white focus:border-[#FF6B00] focus:outline-hidden"
+                className="w-full h-12 text-center text-xl font-mono font-bold tracking-widest bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-hidden text-slate-900"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full h-12 rounded-full bg-black hover:bg-black/90 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+              className="w-full h-12 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
             >
               <span>Verify & Continue</span>
-              <CheckCircle className="w-4 h-4 text-[#FF6B00]" />
+              <CheckCircle className="w-4 h-4 text-white" />
             </button>
 
             <button
               type="button"
               onClick={() => setOtpSent(false)}
-              className="w-full text-center text-xs text-black/40 hover:text-black cursor-pointer"
+              className="w-full text-center text-xs text-slate-500 hover:text-slate-800 cursor-pointer"
             >
               Change mobile number
             </button>
           </form>
         )}
+
+        {/* Subtle Developer / Testing Quick Login Drawer */}
+        <details className="mt-6 pt-4 border-t border-slate-100 text-xs">
+          <summary className="text-[11px] font-semibold text-slate-400 hover:text-slate-600 cursor-pointer select-none">
+            Quick 1-Click Demo Accounts (Optional)
+          </summary>
+          <div className="grid grid-cols-3 gap-2 mt-3">
+            <button
+              type="button"
+              onClick={loginAsDemoRenter}
+              className="py-2 px-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-800 font-bold text-[10px] flex flex-col items-center justify-center gap-1 transition-all cursor-pointer text-center"
+            >
+              <User className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Renter Demo</span>
+            </button>
+            <button
+              type="button"
+              onClick={loginAsDemoHost}
+              className="py-2 px-2 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 font-bold text-[10px] flex flex-col items-center justify-center gap-1 transition-all cursor-pointer text-center"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>Host Demo</span>
+            </button>
+            <button
+              type="button"
+              onClick={loginAsDemoAdmin}
+              className="py-2 px-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] flex flex-col items-center justify-center gap-1 transition-all cursor-pointer text-center"
+            >
+              <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Admin Demo</span>
+            </button>
+          </div>
+        </details>
       </div>
     </div>
   );
