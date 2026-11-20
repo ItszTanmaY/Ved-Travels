@@ -4,7 +4,7 @@ import React from "react";
 import { Clock, Calendar, Briefcase, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { useRental, DURATION_PRESETS } from "@/context/RentalContext";
 
-export function ZoomcarCategoriesGrid() {
+export function FlexiblePlansCategoriesGrid() {
   const { setSelectedDuration, setSearchCategory } = useRental();
 
   const handleSelectDaily = () => {

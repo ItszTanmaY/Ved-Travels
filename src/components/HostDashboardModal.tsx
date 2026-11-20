@@ -868,7 +868,7 @@ export default function HostDashboardModal() {
                     <div className="mt-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-950 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>
-                        <strong>Pay at Hub:</strong> Collect <strong>₹{bookings.find((b) => b.id === selectedBookingId)?.totalAmount}</strong> (Fare + Deposit) before handing over keys.
+                        <strong>Pay on Handover:</strong> Collect <strong>₹{bookings.find((b) => b.id === selectedBookingId)?.totalAmount}</strong> before handing over keys.
                       </span>
                     </div>
                   )}
@@ -1097,7 +1097,7 @@ export default function HostDashboardModal() {
                             </div>
 
                             <div className="text-xs font-bold text-emerald-700">
-                              Total Amount: {formatINR(b.totalAmount)} (Rent: {formatINR(b.baseRent)} + Refundable Deposit: {formatINR(b.securityDeposit)})
+                              Total Fare: {formatINR(b.totalAmount)}
                             </div>
                           </div>
 
@@ -1190,10 +1190,7 @@ export default function HostDashboardModal() {
                                   Cash/UPI to Collect at Counter
                                 </span>
                                 <div className="text-base font-bold text-amber-950">
-                                  {formatINR(b.totalAmount)}{" "}
-                                  <span className="text-[11px] font-normal text-amber-800">
-                                    (Rent: {formatINR(b.baseRent)} + Deposit: {formatINR(b.securityDeposit)})
-                                  </span>
+                                  {formatINR(b.totalAmount)}
                                 </div>
                               </div>
                               <div className="text-right">
@@ -1288,7 +1285,7 @@ export default function HostDashboardModal() {
                                 Host: <strong className="text-black">{v.hostName}</strong> • {v.category === "bike" ? "Two-Wheeler" : "Car"} • {v.transmission} • {v.fuel}
                               </p>
                               <div className="text-xs font-bold text-[#059669]">
-                                Tariff: {formatINR(v.hourlyRate)}/hr • {formatINR(v.dailyRate)}/day • Deposit: {formatINR(v.securityDeposit)}
+                                Tariff: {formatINR(v.hourlyRate)}/hr • {formatINR(v.dailyRate)}/day
                               </div>
                             </div>
                           </div>

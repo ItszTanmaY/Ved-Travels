@@ -4,7 +4,7 @@ import React from "react";
 import { TrendingUp, ShieldCheck, Calculator, ArrowRight, CheckCircle2, Sparkles, Car } from "lucide-react";
 import { useRental } from "@/context/RentalContext";
 
-export function ZoomcarHostFeatures() {
+export function VedHostFeatures() {
   const { currentUser, openHostDashboard, openAuthModal } = useRental();
 
   const handleRegisterClick = () => {
@@ -32,10 +32,10 @@ export function ZoomcarHostFeatures() {
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-xs font-bold text-[#FF6B00]">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>ZOOMCAR HOST PARTNER PROGRAM IN VADODARA</span>
+              <span>VED TRAVELS HOST PARTNER PROGRAM IN VADODARA</span>
             </div>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white">
-              Why 1,200+ Car & Bike Owners in Gujarat Host with Us
+              Why Vadodara Vehicle Owners Host with Ved Travels
             </h2>
             <p className="text-xs sm:text-sm text-white/60 leading-relaxed font-light">
               Turn your parked vehicle into a high-yield passive business. Zero upfront investment, verified renters, and guaranteed timely Monday payouts.

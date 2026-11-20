@@ -5,7 +5,7 @@ import { Compass, Gift, Bike, ArrowRight, Sparkles, Navigation } from "lucide-re
 import { useRental } from "@/context/RentalContext";
 import { toast } from "sonner";
 
-export function ZoomcarExploreGrid() {
+export function VedExploreGrid() {
   const { setSearchCategory } = useRental();
 
   const handleBikeClick = () => {

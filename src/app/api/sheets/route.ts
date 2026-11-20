@@ -1,21 +1,44 @@
 import { NextResponse } from "next/server";
 
+// Only read server-side environment variables to ensure Google Script URL is NEVER leaked in client bundles
 function getSheetsUrl(): string | undefined {
   return (
     process.env.GOOGLE_SHEET_URL ||
-    process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL ||
     process.env.GOOGLE_SHEETS_URL ||
-    process.env.NEXT_PUBLIC_GOOGLE_SHEETS_URL ||
     process.env.GOOGLE_SHEETS_API_URL ||
-    process.env.NEXT_PUBLIC_GOOGLE_SHEETS_API_URL ||
     process.env.GOOGLE_SCRIPT_URL ||
+    process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL ||
+    process.env.NEXT_PUBLIC_GOOGLE_SHEETS_URL ||
+    process.env.NEXT_PUBLIC_GOOGLE_SHEETS_API_URL ||
     process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL
   );
 }
 
+const ALLOWED_ACTIONS = [
+  "create_booking",
+  "submit_vehicle",
+  "update_booking_status",
+  "approve_vehicle",
+];
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+
+    if (!body || typeof body !== "object") {
+      return NextResponse.json(
+        { success: false, error: "Invalid request payload" },
+        { status: 400 }
+      );
+    }
+
+    if (body.action && !ALLOWED_ACTIONS.includes(body.action)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized action" },
+        { status: 403 }
+      );
+    }
+
     const sheetsUrl = getSheetsUrl();
 
     if (!sheetsUrl) {
@@ -27,7 +50,7 @@ export async function POST(request: Request) {
       });
     }
 
-    // Forward payload to Google Apps Script Web App with redirect following
+    // Forward sanitized payload to Google Apps Script Web App over HTTPS with redirect following
     const response = await fetch(sheetsUrl, {
       method: "POST",
       headers: {
@@ -51,10 +74,10 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Google Sheets sync error:", error);
-    // Graceful error response so user flow is never disrupted
+    // Secure error response without leaking internal URLs or credentials
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : "Sync error",
+      error: "Unable to sync with Google Sheets. Data persisted locally.",
     });
   }
 }

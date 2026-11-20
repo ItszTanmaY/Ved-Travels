@@ -7,7 +7,7 @@ const STEPS = [
     step: "01",
     title: "Pick Your Machine & Duration",
     description:
-      "Choose from verified bikes (Activa, Classic 350, Hunter) or self-drive cars (Swift, Creta, Nexon, Thar) by the hour or day.",
+      "Choose from verified bikes (Activa, R15, Classic 350) or self-drive cars (Swift, Ciaz, City, Ertiga, Thar) starting from 1 hr or 6 hrs.",
     icon: Calendar,
     pill: "By Hour or Day",
   },
@@ -23,17 +23,17 @@ const STEPS = [
     step: "03",
     title: "Hub Pickup or Doorstep (+₹199)",
     description:
-      "Free pickup at our Vadodara Central Hub (Sayajigunj / Alkapuri) or opt for Doorstep Delivery to your home or hotel. Show your 4-digit OTP to get the keys.",
+      "Free pickup at your preferred Vadodara Hub or opt for Doorstep Delivery to your home or hotel. Show your 4-digit OTP to get the keys.",
     icon: KeyRound,
     pill: "4-Digit Handover OTP",
   },
   {
     step: "04",
-    title: "Ride & 60-Min Deposit Refund",
+    title: "Ride & Hassle-Free Return",
     description:
-      "Enjoy unlimited freedom across Gujarat with active FASTag. Return the machine and your security deposit is automatically credited back within 60 minutes.",
+      "Enjoy unlimited freedom across Gujarat with active FASTag. Simple drop-off at your selected Vadodara hub with zero paperwork delays.",
     icon: RotateCcw,
-    pill: "100% Auto-Refund",
+    pill: "Zero Counter Delay",
   },
 ];
 

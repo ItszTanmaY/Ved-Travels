@@ -3,7 +3,7 @@
 import React from "react";
 import { ShieldCheck, Truck, Star, Award, HeartHandshake } from "lucide-react";
 
-export function ZoomcarTrustBar() {
+export function VedTrustBar() {
   return (
     <section className="w-full bg-[#111113] border-y border-white/10 text-white py-12 px-4 sm:px-6 lg:px-8 my-8">
       <div className="max-w-7xl mx-auto">
@@ -19,10 +19,10 @@ export function ZoomcarTrustBar() {
                 <span>RTO Certified Safety</span>
               </div>
               <h3 className="text-lg font-bold text-white tracking-tight">
-                100% Secured trip
+                100% Verified Trips
               </h3>
               <p className="text-xs text-white/60 leading-relaxed font-light">
-                Comprehensive commercial insurance coverage & 24/7 emergency roadside assistance across Gujarat. Zero liability for standard wear and tear.
+                Comprehensive commercial insurance coverage & 24/7 direct roadside assistance across Gujarat. Zero hidden liability.
               </p>
             </div>
           </div>
@@ -38,15 +38,15 @@ export function ZoomcarTrustBar() {
                 <span>Vadodara Wide Reach</span>
               </div>
               <h3 className="text-lg font-bold text-white tracking-tight">
-                Delivery Anywhere Anytime
+                Doorstep & 6 Hub Delivery
               </h3>
               <p className="text-xs text-white/60 leading-relaxed font-light">
-                Free pickup at Sayajigunj Central Hub or choose doorstep delivery (+₹199) to your home, office, or Vadodara Junction railway platform.
+                Free pickup at Station Central Hub or opt for doorstep delivery (+₹199) to your home, office, or Vadodara Railway / Airport.
               </p>
             </div>
           </div>
 
-          {/* Badge 3: 25k+ Top Rated Cars across India */}
+          {/* Badge 3: Top Rated Fleet */}
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
               <Star className="w-6 h-6 fill-amber-400" />
@@ -56,10 +56,10 @@ export function ZoomcarTrustBar() {
                 <span>Verified 4.9 / 5.0 Rating</span>
               </div>
               <h3 className="text-lg font-bold text-white tracking-tight">
-                25k+ Top Rated Cars across India
+                Top Rated Vadodara Fleet
               </h3>
               <p className="text-xs text-white/60 leading-relaxed font-light">
-                100% sanitized machines with active FASTag, GPS tracking, and complete papers. Over 68,000+ seamless trips fulfilled in Gujarat.
+                100% sanitized machines with active FASTag, spotless interiors, and complete legal papers. Handled personally by Shantanu Shekhar.
               </p>
             </div>
           </div>

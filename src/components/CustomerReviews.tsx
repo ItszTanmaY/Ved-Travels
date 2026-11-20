@@ -6,23 +6,23 @@ const REVIEWS = [
   {
     name: "Rohan Bhatt",
     location: "Gotri, Vadodara",
-    role: "Rented Royal Enfield Hunter 350",
+    role: "Rented Royal Enfield Classic 350",
     rating: 5,
-    text: "Booked the Hunter 350 for a weekend ride to Pavagadh. The 4-digit OTP handover at Sayajigunj Hub took literally 3 minutes! Vehicle was in mint condition and the security deposit was refunded back to my UPI within 40 minutes of return.",
+    text: "Booked the Classic 350 for a weekend ride to Pavagadh. The 4-digit OTP handover at Sayajigunj Hub took literally 3 minutes! Vehicle was in mint condition and fuel tank was full. Zero deposit hassle.",
   },
   {
     name: "Pooja Shah",
     location: "Alkapuri, Vadodara",
-    role: "Rented Hyundai Creta SX",
+    role: "Rented Maruti Swift",
     rating: 5,
-    text: "Had family visiting from Mumbai. The doorstep delivery to Alkapuri was super punctual. The Creta was sparkling clean with active FASTag. Much better and cleaner than traditional car rental operators in Gujarat.",
+    text: "Had family visiting Vadodara. The doorstep delivery to Alkapuri was super punctual. The Swift was sparkling clean with active FASTag. Much better and cleaner than traditional car rental operators in Gujarat.",
   },
   {
     name: "Karan Desai",
     location: "Sayajigunj, Vadodara",
     role: "Host Partner (Maruti Swift)",
     rating: 5,
-    text: "I attached my 2022 Swift to Ved Travels while I work from home. I earn ₹32,000 every single month on auto-pilot. Free doorstep GPS tracker was installed by their team, and every renter's DL is pre-verified.",
+    text: "I attached my Swift to Ved Travels while working from home. Free doorstep GPS tracker was installed by Shantanu and his team, and every renter's DL is pre-verified.",
   },
 ];
 
@@ -37,7 +37,7 @@ export default function CustomerReviews() {
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-heading font-extrabold text-slate-900 tracking-tight">
-            Loved by 12,000+ Renters & Hosts
+            Loved by Vadodara Travelers & Renters
           </h2>
 
           <p className="text-sm text-slate-600 font-body">

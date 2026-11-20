@@ -24,11 +24,11 @@ import VehicleBookingModal from "@/components/VehicleBookingModal";
 import AuthModal from "@/components/AuthModal";
 import MyTripsModal from "@/components/MyTripsModal";
 import HostDashboardModal from "@/components/HostDashboardModal";
-import { ZoomcarTopOffers } from "@/components/ZoomcarTopOffers";
-import { ZoomcarCategoriesGrid } from "@/components/ZoomcarCategoriesGrid";
-import { ZoomcarExploreGrid } from "@/components/ZoomcarExploreGrid";
-import { ZoomcarHostFeatures } from "@/components/ZoomcarHostFeatures";
-import { ZoomcarTrustBar } from "@/components/ZoomcarTrustBar";
+import { VedTopOffers } from "@/components/VedTopOffers";
+// import { FlexiblePlansCategoriesGrid } from "@/components/FlexiblePlansCategoriesGrid"; // FLEXIBLE SELF-DRIVE PLANS (Commented out per request)
+import { VedExploreGrid } from "@/components/VedExploreGrid";
+import { VedHostFeatures } from "@/components/VedHostFeatures";
+import { VedTrustBar } from "@/components/VedTrustBar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { useRental } from "@/context/RentalContext";
 import { VADODARA_CENTRAL_HUB, VADODARA_LOCATIONS, VED_BUSINESS_CONFIG, Vehicle } from "@/data/fleet";
@@ -412,8 +412,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Zoomcar Explore Beyond Grid (Intercity Cabs, Gift a Drive, Bike Rentals) */}
-        <ZoomcarExploreGrid />
+        {/* Ved Travels Explore Beyond Grid (Intercity Cabs, Gift a Drive, Bike Rentals) */}
+        <VedExploreGrid />
 
         {/* ============================================================== */}
         {/* 4. HOW IT WORKS (CLEAN STEP-BY-STEP FLOW) */}
@@ -427,7 +427,7 @@ export default function Home() {
               Seamless Self-Drive In 4 Simple Steps
             </h2>
             <p className="text-sm sm:text-base text-black/50 font-light">
-              No endless paperwork queues. Book your machine online in 60 seconds and start driving.
+              No endless paperwork queues. Book your machine in 60 seconds with WhatsApp confirmation.
             </p>
           </div>
 
@@ -436,7 +436,7 @@ export default function Home() {
               {
                 num: "01",
                 title: "Pick Date & Machine",
-                desc: "Choose from verified bikes (Activa, Classic, Hunter) or self-drive cars (Swift, Creta, Nexon, Thar) by the hour or day.",
+                desc: "Choose from verified bikes (Activa, R15, Classic 350) or self-drive cars (Swift, Ciaz, City, Ertiga, Thar) starting from 1 hr or 6 hrs.",
               },
               {
                 num: "02",
@@ -446,12 +446,12 @@ export default function Home() {
               {
                 num: "03",
                 title: "Hub Pickup + 4-Digit OTP",
-                desc: "Free pickup at our Vadodara Central Hub (Sayajigunj Platform 1) or Doorstep Delivery. Show your 4-digit OTP to get keys.",
+                desc: "Free pickup at your preferred Vadodara Hub or Doorstep Delivery. Show your 4-digit OTP to get keys instantly.",
               },
               {
                 num: "04",
-                title: "Ride & Auto Refund",
-                desc: "Enjoy unlimited freedom across Gujarat with FASTag. Return the machine and your deposit is auto-refunded in 60 mins.",
+                title: "Ride & Easy Return",
+                desc: "Enjoy unlimited freedom across Gujarat with active FASTag. Simple drop-off at your selected Vadodara hub with zero paperwork delays.",
               },
             ].map((step, i) => (
               <div
@@ -603,14 +603,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Zoomcar-Style Top Search & Sliding Offers Banner */}
-        <ZoomcarTopOffers />
+        {/* Ved Travels Top Search & Sliding Offers Banner */}
+        <VedTopOffers />
 
-        {/* Zoomcar-Style Self-Drive Categories Grid */}
-        <ZoomcarCategoriesGrid />
+        {/* FLEXIBLE SELF-DRIVE PLANS (Commented out for now as requested by user - will re-add later) */}
+        {/* <FlexiblePlansCategoriesGrid /> */}
 
-        {/* Zoomcar Host & Earn 3 Distinct Feature Cards with Register Now Arrow */}
-        <ZoomcarHostFeatures />
+        {/* Ved Host & Earn Feature Cards with Register Now Arrow */}
+        <VedHostFeatures />
 
         {/* ============================================================== */}
         {/* 6. HOST & EARN (MONETIZATION SECTION WITH INTERACTIVE CALCULATOR) */}
@@ -807,16 +807,16 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Zoomcar Trust Badges Bar (100% Secured Trip, Delivery Anywhere, 25k+ Cars) */}
-        <ZoomcarTrustBar />
+        {/* Ved Travels Trust Badges Bar (100% Secured Trip, Delivery Anywhere, Verified Fleet) */}
+        <VedTrustBar />
 
         {/* ============================================================== */}
-        {/* 7. TESTIMONIALS SECTION (EXACT DEMORENTALL STYLE) */}
+        {/* 7. TESTIMONIALS SECTION */}
         {/* ============================================================== */}
         <section className="px-6 py-20 max-w-7xl mx-auto border-t border-black/5">
           <div className="flex flex-col md:flex-row gap-12 items-start md:items-center justify-between mb-16">
             <h2 className="text-4xl md:text-5xl font-bold tracking-tight max-w-lg leading-tight text-black">
-              Driven by excellence. Defined by our clients.
+              Trusted by riders across Vadodara.
             </h2>
             <div className="w-16 h-[1px] bg-black/20 hidden md:block" />
           </div>
@@ -825,14 +825,14 @@ export default function Home() {
             <div className="flex flex-col gap-6 p-8 md:p-10 bg-[#FAFAF9] rounded-3xl border border-black/5 hover:bg-white hover:shadow-2xl transition-all duration-500 group">
               <div className="text-[#FF6B00] text-6xl font-serif leading-none opacity-50">&quot;</div>
               <p className="text-lg md:text-xl font-light leading-relaxed text-black">
-                The 4-digit OTP handover at Sayajigunj Hub took literally 3 minutes. The Hunter 350 was
-                in immaculate condition and the security deposit was refunded back to my UPI within 40 minutes of return.
+                The 4-digit OTP handover at Sayajigunj Hub took literally 3 minutes. The Classic 350 was
+                in immaculate condition with full tank and dual ISI helmets. Zero deposit hassle and instant WhatsApp confirmation!
               </p>
               <div className="mt-auto pt-6 border-t border-black/5 flex items-center justify-between">
                 <div>
-                  <div className="font-bold text-base tracking-tight text-black">Alexander Wright</div>
+                  <div className="font-bold text-base tracking-tight text-black">Rohan Bhatt</div>
                   <div className="text-black/40 text-xs uppercase tracking-widest mt-0.5">
-                    Rented Royal Enfield Hunter • Vadodara
+                    Rented Royal Enfield Classic 350 • Gotri, Vadodara
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -846,14 +846,13 @@ export default function Home() {
             <div className="flex flex-col gap-6 p-8 md:p-10 bg-[#FAFAF9] rounded-3xl border border-black/5 hover:bg-white hover:shadow-2xl transition-all duration-500 group md:translate-y-8">
               <div className="text-[#FF6B00] text-6xl font-serif leading-none opacity-50">&quot;</div>
               <p className="text-lg md:text-xl font-light leading-relaxed text-black">
-                A masterclass in customer service. Their curated fleet is unparalleled, and having doorstep
-                delivery to our hotel in Alkapuri made our weekend trip completely stress-free.
+                Outstanding service. Having doorstep delivery to our home in Alkapuri made our weekend trip completely stress-free. The Swift was spotless with working FASTag.
               </p>
               <div className="mt-auto pt-6 border-t border-black/5 flex items-center justify-between">
                 <div>
-                  <div className="font-bold text-base tracking-tight text-black">Elena Rostova</div>
+                  <div className="font-bold text-base tracking-tight text-black">Pooja Shah</div>
                   <div className="text-black/40 text-xs uppercase tracking-widest mt-0.5">
-                    Rented Hyundai Creta SX • Mumbai Traveler
+                    Rented Maruti Swift • Alkapuri, Vadodara
                   </div>
                 </div>
                 <div className="flex gap-1">
@@ -867,66 +866,7 @@ export default function Home() {
         </section>
 
         {/* ============================================================== */}
-        {/* 8. LEADERSHIP / THE VISIONARIES (EXACT DEMORENTALL STYLE) */}
-        {/* ============================================================== */}
-        <section className="px-6 py-20 max-w-7xl mx-auto border-t border-black/5 relative overflow-hidden">
-          <div
-            className="absolute inset-0 opacity-[0.06] pointer-events-none"
-            style={{
-              backgroundImage: "radial-gradient(circle, #000 1.5px, transparent 1.5px)",
-              backgroundSize: "32px 32px",
-            }}
-          />
-
-          <div className="relative z-10 mb-16 text-center max-w-3xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-black">
-              The Visionaries
-            </h2>
-            <p className="text-black/50 text-base md:text-lg leading-relaxed">
-              Founded by automotive pioneers who believe that renting a premium vehicle should be as
-              extraordinary as owning one.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-8">
-            <div className="flex flex-col group">
-              <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden mb-6 bg-black/5">
-                <img
-                  src="/images/leader_1.jpg"
-                  alt="Marcus Sterling"
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="text-2xl font-bold tracking-tight mb-1 text-black">Shantanu Shekhar</h3>
-              <p className="text-[#FF6B00] font-bold uppercase tracking-widest text-xs mb-3">
-                Founder & Fleet Director
-              </p>
-              <p className="text-black/60 text-sm leading-relaxed">
-                Leading Ved Travels Vadodara with an uncompromising focus on transparent slab pricing, verified self-drive vehicles, and direct 24×7 WhatsApp support.
-              </p>
-            </div>
-
-            <div className="flex flex-col group md:translate-y-12">
-              <div className="relative w-full aspect-[3/4] rounded-3xl overflow-hidden mb-6 bg-black/5">
-                <img
-                  src="/images/leader_2.jpg"
-                  alt="Vadodara Operations Team"
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                />
-              </div>
-              <h3 className="text-2xl font-bold tracking-tight mb-1 text-black">Ved Operations Team</h3>
-              <p className="text-[#FF6B00] font-bold uppercase tracking-widest text-xs mb-3">
-                24×7 Ground & Dispatch Team
-              </p>
-              <p className="text-black/60 text-sm leading-relaxed">
-                Stationed across our 6 Vadodara hubs (Ajwa, Waghodia, Sumandeep, Parul, Railway Station & Airport) ensuring instant 4-digit OTP vehicle handovers and roadside assistance.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ============================================================== */}
-        {/* 9. GLOBAL CTA SECTION (EXACT ORANGE BANNER VIBE) */}
+        {/* 8. GLOBAL CTA SECTION (EXACT ORANGE BANNER VIBE) */}
         {/* ============================================================== */}
         <section className="px-6 py-28 md:py-36 bg-[#FF6B00] text-white text-center relative overflow-hidden rounded-[3rem] mx-4 md:mx-8 mb-20 shadow-2xl">
           <div
@@ -1018,7 +958,7 @@ export default function Home() {
       <MyTripsModal />
       <HostDashboardModal />
 
-      {/* Sticky Fixed Zoomcar-Style Mobile Bottom Navigation Bar */}
+      {/* Sticky Fixed Mobile Bottom Navigation Bar */}
       <MobileBottomNav />
     </>
   );

@@ -83,11 +83,11 @@ export default function VehicleBookingModal() {
 
   if (!selectedVehicle) return null;
 
-  const isCar = selectedVehicle.category === "car" || selectedVehicle.minHours >= 12;
+  const isCar = selectedVehicle.category === "car" || selectedVehicle.minHours >= 6;
 
-  // Filter duration presets for cars vs bikes
+  // Filter duration presets for cars vs bikes (Cars minimum 6 hours)
   const availablePresets = isCar
-    ? DURATION_PRESETS.filter((p) => p.hours >= 12)
+    ? DURATION_PRESETS.filter((p) => p.hours >= 6)
     : DURATION_PRESETS;
 
   const isSlotLocked = isVehicleSlotLocked(selectedVehicle.id, selectedDuration);
@@ -169,9 +169,7 @@ export default function VehicleBookingModal() {
         `• *Start Date:* ${b.startDate}\n` +
         `• *Doorstep Delivery:* ${b.doorstepDelivery ? `Yes (+₹199) to ${b.deliveryAddress}` : `No (Hub Pickup at ${b.pickupLocation})`}\n` +
         `• *Payment Mode:* Direct via WhatsApp / On Pickup (Cash or UPI)\n` +
-        `• *Base Rent:* ${formatINR(b.baseRent)}\n` +
-        `• *Refundable Deposit:* ${formatINR(b.securityDeposit)}\n` +
-        `• *Total Estimated:* ${formatINR(b.totalAmount)}\n` +
+        `• *Total Estimated Tariff:* ${formatINR(b.totalAmount)}\n` +
         `----------------------------------------\n` +
         `🔑 *4-DIGIT START TRIP OTP:* ${b.otp}\n` +
         `----------------------------------------\n` +
@@ -509,20 +507,10 @@ export default function VehicleBookingModal() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center text-slate-700">
-                <span className="flex items-center gap-1">
-                  <span>Refundable Security Deposit:</span>
-                  <span className="text-[10px] text-emerald-600 font-semibold">(Refunded at drop-off)</span>
-                </span>
-                <span className="font-bold text-slate-900 font-mono">
-                  +{formatINR(pricing.deposit)}
-                </span>
-              </div>
-
               <div className="pt-2 border-t border-black/10 flex justify-between items-center text-sm">
                 <div>
                   <strong className="text-black block">Total Estimated Amount:</strong>
-                  <span className="text-[10px] text-black/40">Includes rent + deposit</span>
+                  <span className="text-[10px] text-emerald-700 font-medium">Includes full rental tariff • Zero advance deposit</span>
                 </div>
                 <div className="text-right">
                   <div className="font-mono text-xl font-black text-[#059669]">

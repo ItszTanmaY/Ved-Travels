@@ -17,8 +17,8 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
   const pricing = calculateTariff(vehicle, selectedDuration, doorstepDelivery);
   const isSlotLocked = isVehicleSlotLocked(vehicle.id, selectedDuration);
   const isAvailable = vehicle.available && !isSlotLocked;
-  const isCar = vehicle.category === "car" || vehicle.minHours >= 12;
-  const showMinCarBadge = isCar && selectedDuration.hours < 12;
+  const isCar = vehicle.category === "car" || vehicle.minHours >= 6;
+  const showMinCarBadge = isCar && selectedDuration.hours < 6;
 
   return (
     <div
@@ -56,7 +56,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
               {showMinCarBadge && (
                 <div className="inline-flex items-center gap-1 bg-amber-500/90 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold text-black shadow-md border border-amber-300">
                   <Clock className="w-3 h-3 text-black" />
-                  <span>Min 12 Hrs</span>
+                  <span>Min 6 Hrs</span>
                 </div>
               )}
 
@@ -144,7 +144,7 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
             <div className="text-[9px] sm:text-[10px] uppercase font-bold text-white/40 tracking-wider truncate flex items-center gap-1.5">
               <span>
                 {showMinCarBadge
-                  ? "Rent for 12 Hrs (Car Min Package)"
+                  ? "Rent for 6 Hrs (Car Min Package)"
                   : `Rent for ${selectedDuration.label}`}
               </span>
             </div>
@@ -156,8 +156,8 @@ export function VehicleCard({ vehicle }: VehicleCardProps) {
                 ({pricing.rateText})
               </span>
             </div>
-            <div className="text-[9px] sm:text-[10px] text-white/40 mt-1 truncate">
-              + {formatINR(vehicle.securityDeposit)} deposit (100% refund)
+            <div className="text-[9px] sm:text-[10px] text-emerald-400/80 mt-1 truncate font-medium">
+              Zero Advance Deposit • Pay on Handover
             </div>
           </div>
 

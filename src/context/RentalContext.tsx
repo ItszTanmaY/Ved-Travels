@@ -129,7 +129,7 @@ interface RentalContextType {
 
 const RentalContext = createContext<RentalContextType | undefined>(undefined);
 
-const VEHICLES_KEY = "ved_travels_vehicles_v4_slabs";
+const VEHICLES_KEY = "ved_travels_vehicles_v5_min6h";
 const BOOKINGS_KEY = "ved_travels_bookings_v4";
 const USER_KEY = "ved_travels_user_v4";
 
@@ -164,8 +164,14 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       const storedVehicles = localStorage.getItem(VEHICLES_KEY);
       if (storedVehicles) {
         const parsed = JSON.parse(storedVehicles);
-        // If older cached fleet lacks slabs, force refresh to new official 10 vehicles
-        if (Array.isArray(parsed) && parsed.length === INITIAL_VEHICLES.length && parsed[0]?.slabs) {
+        // Ensure fresh fleet with min 6h cars & zero deposit
+        if (
+          Array.isArray(parsed) &&
+          parsed.length === INITIAL_VEHICLES.length &&
+          parsed[0]?.slabs &&
+          parsed[3]?.minHours === 6 &&
+          parsed[0]?.securityDeposit === 0
+        ) {
           setVehicles(parsed);
         } else {
           setVehicles(INITIAL_VEHICLES);
@@ -297,6 +303,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     const isCar = newVehicle.category === "car";
     const defaultSlabs: TariffSlabs = newVehicle.slabs || (isCar
       ? {
+          hr6: Math.round(newVehicle.dailyRate * 0.45) || 1600,
           hr12: Math.round(newVehicle.dailyRate * 0.72) || 2500,
           hr24: newVehicle.dailyRate || 3500,
         }
@@ -317,7 +324,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       approvalStatus: "pending_approval",
       available: false, // Locked until approved by Admin
       slabs: defaultSlabs,
-      minHours: newVehicle.minHours || (isCar ? 12 : 1),
+      minHours: newVehicle.minHours || (isCar ? 6 : 1),
+      securityDeposit: 0,
       bookedSlots: [],
     };
     const updated = [vehicleWithMeta, ...vehicles];
@@ -384,13 +392,16 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   ): TariffCalculation => {
     let baseRent = 0;
     let rateText = "";
-    const isCar = vehicle.category === "car" || vehicle.minHours >= 12;
+    const isCar = vehicle.category === "car" || vehicle.minHours >= 6;
 
     if (isCar) {
-      // Smart Car Rule: Cars start at 12 hours minimum
-      if (duration.hours <= 12) {
+      // Smart Car Rule: Cars start at 6 hours minimum
+      if (duration.hours <= 6) {
+        baseRent = vehicle.slabs?.hr6 || Math.round(vehicle.dailyRate * 0.45);
+        rateText = duration.hours < 6 ? "Min 6 Hrs Package" : "6 Hrs Slab";
+      } else if (duration.hours <= 12) {
         baseRent = vehicle.slabs?.hr12 || (vehicle.hourlyRate * 12);
-        rateText = duration.hours < 12 ? "Min 12 Hrs Package" : "12 Hrs Slab";
+        rateText = "12 Hrs Slab";
       } else if (duration.hours <= 24) {
         baseRent = vehicle.slabs?.hr24 || vehicle.dailyRate;
         rateText = "24 Hrs (1 Day) Slab";
@@ -426,16 +437,16 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     }
 
     const deliveryFee = withDelivery ? VADODARA_CENTRAL_HUB.deliveryCharge : 0;
-    const deposit = vehicle.securityDeposit;
-    const total = baseRent + deliveryFee + deposit;
+    const deposit = 0; // Removed security deposit per user directive
+    const total = baseRent + deliveryFee;
 
     return {
       baseRent,
-      deposit,
+      deposit: 0,
       deliveryFee,
       total,
       rateText,
-      isMinEnforced: isCar && duration.hours < 12,
+      isMinEnforced: isCar && duration.hours < 6,
     };
   };
 

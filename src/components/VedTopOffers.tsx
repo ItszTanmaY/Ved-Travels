@@ -49,7 +49,7 @@ const OFFERS: Offer[] = [
   },
 ];
 
-export function ZoomcarTopOffers() {
+export function VedTopOffers() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   const handleCopyCode = (code: string) => {
@@ -77,7 +77,7 @@ export function ZoomcarTopOffers() {
           </span>
         </div>
 
-        {/* Zoomcar-Style Coin / Rewards Badges */}
+        {/* Ved Rewards Badges */}
         <div className="flex items-center gap-2">
           <div className="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-full text-xs font-bold text-amber-900 shadow-2xs">
             <Coins className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
@@ -86,7 +86,7 @@ export function ZoomcarTopOffers() {
 
           <div className="hidden xs:inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-full text-xs font-bold text-emerald-800 shadow-2xs">
             <Sparkles className="w-3 h-3 text-emerald-600" />
-            <span>250 Z-Credits Ready</span>
+            <span>Ved Rewards Active</span>
           </div>
         </div>
       </div>

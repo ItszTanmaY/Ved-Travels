@@ -26,7 +26,7 @@ export default function ConsumerFooter() {
 
             <p className="text-xs text-slate-500 leading-relaxed font-body">
               Vadodara&apos;s leading self-drive bike & car rental marketplace. Managed by{" "}
-              <strong className="text-slate-800">{VED_BUSINESS_CONFIG.owner}</strong>. Slab-based transparent tariff, paperless KYC, and instant deposit refunds.
+              <strong className="text-slate-800">{VED_BUSINESS_CONFIG.owner}</strong>. Slab-based transparent tariff, paperless KYC, and zero advance deposit.
             </p>
 
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
