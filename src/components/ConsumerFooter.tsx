@@ -20,7 +20,7 @@ export default function ConsumerFooter() {
                 V
               </div>
               <span className="font-heading font-extrabold text-lg text-slate-900">
-                VED <span className="text-emerald-600">TRAVELS</span>
+                VED <span className="text-emerald-600">TRAVELS</span><span className="text-[#FF6B00]">.</span>
               </span>
             </div>
 
