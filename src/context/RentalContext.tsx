@@ -356,6 +356,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         toast.info("Google Sign-In was closed.");
       } else if (err.code === "auth/cancelled-popup-request") {
         // Ignored
+      } else if (err.code === "auth/unauthorized-domain") {
+        toast.error("Vercel Domain Not Authorized in Firebase", {
+          description:
+            "Please go to Firebase Console -> Authentication -> Settings -> Authorized Domains and add 'vedtravels.vercel.app'.",
+          duration: 10000,
+        });
       } else {
         toast.error("Google Sign-In Failed", {
           description: err.message || "Please check connection or credentials.",
