@@ -458,41 +458,11 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     return created;
   };
 
-  const loginWithCredentials = (identifier: string, secret: string): User | null => {
-    const cleanId = identifier.trim().toLowerCase();
-    const cleanSecret = secret.trim();
-
-    // Check if business owner admin via configured email
-    const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "vedtravels0777@gmail.com").toLowerCase();
-    if (cleanId === adminEmail || cleanId === VED_ADMIN_ACCOUNT.phone) {
-      // Auto-delegate to Google Sign-In or set admin
-      login(VED_ADMIN_ACCOUNT);
-      return VED_ADMIN_ACCOUNT;
-    }
-
-    // Match registered users
-    const matched = registeredUsers.find((u) => {
-      const phoneMatches = u.phone.replace(/\D/g, "").includes(cleanId.replace(/\D/g, ""));
-      const emailMatches = u.email && u.email.toLowerCase() === cleanId;
-      return phoneMatches || emailMatches;
+  const loginWithCredentials = (_identifier: string, _secret: string): User | null => {
+    toast.info("Please sign in securely with Google", {
+      description: "Ved Travels uses encrypted Google Authentication for all accounts.",
     });
-
-    if (!matched) {
-      toast.error("No account found with this phone number or email", {
-        description: "Please sign in with Google or register a new account.",
-      });
-      return null;
-    }
-
-    if (matched.password && matched.password !== cleanSecret) {
-      toast.error("Incorrect Password / PIN", {
-        description: "Please re-enter your 4-digit PIN or password.",
-      });
-      return null;
-    }
-
-    login(matched);
-    return matched;
+    return null;
   };
 
   const loginAsAdmin = (_secret?: string): boolean => {
