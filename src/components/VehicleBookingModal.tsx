@@ -31,6 +31,7 @@ import {
   RefreshCw,
   Building2,
   MessageCircle,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -478,6 +479,23 @@ export default function VehicleBookingModal() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Promo / Coupon Offers (Coming Soon) */}
+            <div className="p-3.5 rounded-2xl bg-[#FAFAF9] border border-black/5 flex items-center justify-between gap-3 text-xs select-none">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-700 flex items-center justify-center shrink-0">
+                  <Tag className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-slate-800 truncate">Coupons & Promo Codes</div>
+                  <div className="text-[11px] text-slate-500 truncate">Exclusive flat discount codes for self-drive bookings</div>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-amber-50 text-amber-900 border border-amber-200 shrink-0 shadow-2xs">
+                <Clock className="w-3 h-3 text-amber-600" />
+                <span>Promo Offers — Coming Soon</span>
+              </span>
             </div>
 
             {/* Tariff Breakdown (Real Exact Slabs) */}
