@@ -244,31 +244,56 @@ export default function MyTripsModal() {
                   </div>
 
                   {/* Highlight: Gated 4-DIGIT HANDOVER OTP (Unlocked only upon Admin confirmation) */}
-                  {(booking.status === "pending_payment" || booking.status === "pending_offline_verification") && (
-                    <div className="bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
-                          <Lock className="w-5 h-5 text-amber-700" />
-                        </div>
-                        <div>
-                          <div className="text-xs font-bold text-amber-950 uppercase tracking-wider">
-                            Awaiting Payment Verification from Ved Travels
+                  {(booking.status === "pending_payment" || booking.status === "pending_offline_verification") && (() => {
+                    const bookingTs =
+                      booking.createdAtTimestamp ||
+                      (booking.id.startsWith("booking-") ? Number(booking.id.replace("booking-", "")) : 0);
+                    const minsElapsed = bookingTs > 0 ? Math.floor((Date.now() - bookingTs) / 60000) : 0;
+                    const minsRemaining = Math.max(0, 20 - minsElapsed);
+
+                    return (
+                      <div className="bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                            <Lock className="w-5 h-5 text-amber-700" />
                           </div>
-                          <p className="text-xs text-amber-800 mt-0.5">
-                            Your 4-Digit Start OTP will unlock once payment is verified.
-                          </p>
+                          <div>
+                            <div className="text-xs font-bold text-amber-950 uppercase tracking-wider">
+                              Awaiting Payment Verification from Ved Travels
+                            </div>
+                            <p className="text-xs text-amber-800 mt-0.5">
+                              Your 4-Digit Start OTP will unlock once payment is verified.
+                            </p>
+                            {minsRemaining > 0 ? (
+                              <p className="text-[11px] font-semibold text-amber-900 mt-1 flex items-center gap-1">
+                                <span>⏱️</span>
+                                <span>Hold active for <strong>{minsRemaining} more minute{minsRemaining === 1 ? "" : "s"}</strong> — auto-unlocks if unverified.</span>
+                              </p>
+                            ) : (
+                              <p className="text-[11px] font-bold text-red-700 mt-1">
+                                ⏱️ 20-minute hold window expired. Vehicle has been unlocked.
+                              </p>
+                            )}
+                          </div>
                         </div>
+                        <a
+                          href={`https://wa.me/919546883777?text=${encodeURIComponent(
+                            `Hi Shantanu, I have submitted booking ${booking.bookingCode} for ${booking.vehicleName}. Please verify payment to unlock my 4-digit start OTP.`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          Speed up via WhatsApp
+                        </a>
                       </div>
-                      <a
-                        href={`https://wa.me/919546883777?text=${encodeURIComponent(
-                          `Hi Shantanu, I have submitted booking ${booking.bookingCode} for ${booking.vehicleName}. Please verify payment to unlock my 4-digit start OTP.`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 transition-all cursor-pointer whitespace-nowrap"
-                      >
-                        Speed up via WhatsApp
-                      </a>
+                    );
+                  })()}
+
+                  {booking.status === "cancelled" && booking.expiredReason && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 text-xs text-red-800 flex items-center gap-2">
+                      <span className="text-sm">ℹ️</span>
+                      <span>{booking.expiredReason}</span>
                     </div>
                   )}
 

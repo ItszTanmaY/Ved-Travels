@@ -31,6 +31,7 @@ import {
   Image as ImageIcon,
   AlertCircle,
   Lock,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -111,8 +112,39 @@ export default function VehicleBookingModal() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Support both PDF documents (DigiLocker / Files) and Image photos (Gallery / Camera)
+    if (file.type === "application/pdf") {
+      if (file.size > 8 * 1024 * 1024) {
+        toast.error("PDF is too large (max 8MB). Please choose a smaller file.");
+        return;
+      }
+      setIsCompressingDl(true);
+      try {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          setDlPhoto(dataUrl);
+          toast.success("Driving License PDF Attached!", {
+            description: `${file.name} attached for safety verification.`,
+          });
+          setIsCompressingDl(false);
+        };
+        reader.onerror = () => {
+          toast.error("Could not read document file.");
+          setIsCompressingDl(false);
+        };
+        reader.readAsDataURL(file);
+        return;
+      } catch (err) {
+        console.error("PDF read error", err);
+        toast.error("Could not process PDF.");
+        setIsCompressingDl(false);
+        return;
+      }
+    }
+
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file (JPEG, PNG, WEBP)");
+      toast.error("Please upload an image (JPG, PNG, WEBP) or PDF document");
       return;
     }
 
@@ -120,12 +152,12 @@ export default function VehicleBookingModal() {
     try {
       const compressedDataUrl = await compressImageFile(file, 1200, 0.75);
       setDlPhoto(compressedDataUrl);
-      toast.success("Driving License Photo Uploaded!", {
-        description: "Safety photo compressed & attached for quick key handover.",
+      toast.success("Driving License Attached!", {
+        description: "Photo compressed & attached for key handover.",
       });
     } catch (err) {
       console.error("Compression error", err);
-      toast.error("Could not process photo. Please try another image.");
+      toast.error("Could not process photo. Please try another image or document.");
     } finally {
       setIsCompressingDl(false);
     }
@@ -288,6 +320,9 @@ export default function VehicleBookingModal() {
               <div className="p-3.5 bg-white rounded-xl border border-amber-200 shadow-2xs">
                 <p className="text-xs font-bold text-slate-900 leading-relaxed">
                   Awaiting Payment Verification from Ved Travels — Your 4-Digit Start OTP will unlock once payment is verified.
+                </p>
+                <p className="text-[11px] text-slate-500 mt-1.5 font-medium">
+                  ⏱️ <strong>20-Minute Hold Window:</strong> This vehicle is reserved for 20 minutes while our operations team verifies your booking payment. If unverified within 20 mins, the vehicle automatically unlocks for other renters.
                 </p>
               </div>
 
@@ -562,15 +597,21 @@ export default function VehicleBookingModal() {
               {dlPhoto ? (
                 <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-16 h-12 rounded-lg overflow-hidden border border-emerald-300 bg-white shrink-0">
-                      <img src={dlPhoto} alt="Driving License" className="w-full h-full object-cover" />
-                    </div>
+                    {dlPhoto.startsWith("data:application/pdf") ? (
+                      <div className="w-16 h-12 rounded-lg border border-emerald-300 bg-emerald-100 flex items-center justify-center text-emerald-800 shrink-0">
+                        <FileText className="w-6 h-6 text-emerald-700" />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-12 rounded-lg overflow-hidden border border-emerald-300 bg-white shrink-0">
+                        <img src={dlPhoto} alt="Driving License" className="w-full h-full object-cover" />
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <span className="text-xs font-bold text-emerald-950 block truncate">
-                        ID Document Photo Attached
+                        {dlPhoto.startsWith("data:application/pdf") ? "ID / License PDF Attached" : "ID Document Photo Attached"}
                       </span>
                       <span className="text-[10px] text-emerald-700 block">
-                        Compressed & ready for verification at handover
+                        Attached & ready for verification at handover
                       </span>
                     </div>
                   </div>
@@ -601,26 +642,25 @@ export default function VehicleBookingModal() {
                     {isCompressingDl ? (
                       <RefreshCw className="w-5 h-5 animate-spin" />
                     ) : (
-                      <Camera className="w-5 h-5" />
+                      <Upload className="w-5 h-5" />
                     )}
                   </div>
                   <div>
                     <span className="text-xs font-bold text-emerald-950 block">
-                      {isCompressingDl ? "Compressing Image..." : "Upload Driving License / ID Photo"}
+                      {isCompressingDl ? "Processing document..." : "Upload Driving License / ID (Photo or PDF)"}
                     </span>
                     <span className="text-[10px] text-slate-500 block mt-0.5">
-                      Tap to open camera or choose from gallery (Auto-compressed)
+                      Choose from Photo Gallery, Browse Documents / PDF, or Take Photo
                     </span>
                   </div>
                 </div>
               )}
 
-              {/* Hidden file input */}
+              {/* Hidden file input without capture attribute so mobile gallery & documents are fully accessible */}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
-                capture="environment"
+                accept="image/*,application/pdf"
                 onChange={handleDlFileUpload}
                 className="hidden"
               />

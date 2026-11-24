@@ -455,8 +455,12 @@ export default function AdminDashboardModal() {
                                 : "bg-emerald-100 text-emerald-800 border border-emerald-300"
                             }`}
                           >
-                            {b.status === "pending_payment" || b.status === "pending_offline_verification"
-                              ? "Awaiting Payment"
+                            {b.status === "pending_payment" || b.status === "pending_offline_verification" ? (() => {
+                              const bTime = b.createdAtTimestamp || (b.id.startsWith("booking-") ? Number(b.id.replace("booking-", "")) : 0);
+                              const elapsed = bTime > 0 ? Math.floor((Date.now() - bTime) / 60000) : 0;
+                              const left = Math.max(0, 20 - elapsed);
+                              return left > 0 ? `Awaiting Payment (${left}m hold)` : "Hold Expired (Unlocked)";
+                            })()
                               : b.status === "in_trip"
                               ? "In-Trip"
                               : b.status.replace("confirmed_", "").toUpperCase()}

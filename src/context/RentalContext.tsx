@@ -234,6 +234,44 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // 20-Minute Auto-Expiry cleaner: If an unapproved pending booking exceeds 20 mins, unlock vehicle
+  useEffect(() => {
+    const checkExpiredBookings = () => {
+      const now = Date.now();
+      const TWENTY_MINUTES_MS = 20 * 60 * 1000;
+      let changed = false;
+
+      setBookings((prev) => {
+        const updated = prev.map((b) => {
+          if (b.status === "pending_payment" || b.status === "pending_offline_verification") {
+            const bookingTime =
+              b.createdAtTimestamp ||
+              (b.id.startsWith("booking-") ? Number(b.id.replace("booking-", "")) : 0);
+
+            if (bookingTime > 0 && now - bookingTime > TWENTY_MINUTES_MS) {
+              changed = true;
+              return {
+                ...b,
+                status: "cancelled" as const,
+                expiredReason: "Vehicle hold released: 20-minute verification window expired without admin approval.",
+              };
+            }
+          }
+          return b;
+        });
+
+        if (changed) {
+          localStorage.setItem(BOOKINGS_KEY, JSON.stringify(updated));
+        }
+        return changed ? updated : prev;
+      });
+    };
+
+    checkExpiredBookings();
+    const interval = setInterval(checkExpiredBookings, 20000); // Check every 20 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   // Save changes
   const saveUser = (user: User | null) => {
     setCurrentUser(user);
@@ -637,18 +675,39 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     rejectVehicleInGoogleSheets(vehicleId);
   };
 
-  // Real-time Vehicle Locking Check across entire app
+  // Real-time Vehicle Locking Check across entire app (with 20-minute auto-unlock for unverified bookings)
   const isVehicleCurrentlyBooked = (vehicleId: string): boolean => {
-    return bookings.some(
-      (b) =>
-        b.vehicleId === vehicleId &&
-        (b.status === "pending_payment" ||
-          b.status === "confirmed" ||
-          b.status === "in_trip" ||
-          b.status === "confirmed_whatsapp" ||
-          b.status === "confirmed_pay_at_hub" ||
-          b.status === "pending_offline_verification")
-    );
+    const now = Date.now();
+    const TWENTY_MINUTES_MS = 20 * 60 * 1000;
+
+    return bookings.some((b) => {
+      if (b.vehicleId !== vehicleId) return false;
+
+      // Confirmed, in-trip, or completed-with-active-keys are hard locked until trip completed/cancelled
+      if (
+        b.status === "confirmed" ||
+        b.status === "in_trip" ||
+        b.status === "confirmed_whatsapp" ||
+        b.status === "confirmed_pay_at_hub"
+      ) {
+        return true;
+      }
+
+      // If pending payment/verification, lock vehicle for at most 20 minutes from booking submission
+      if (b.status === "pending_payment" || b.status === "pending_offline_verification") {
+        const bookingTime =
+          b.createdAtTimestamp ||
+          (b.id.startsWith("booking-") ? Number(b.id.replace("booking-", "")) : 0);
+
+        // If older than 20 minutes without Admin confirmation, automatically unlock vehicle!
+        if (bookingTime > 0 && now - bookingTime > TWENTY_MINUTES_MS) {
+          return false;
+        }
+        return true;
+      }
+
+      return false;
+    });
   };
 
   // Real time-slot overlap check
@@ -794,6 +853,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       platformFee,
       hostPayoutStatus: isHostVehicle ? "pending" : undefined,
       status,
+      createdAtTimestamp: Date.now(),
       createdAt: new Date().toLocaleDateString("en-IN", {
         day: "numeric",
         month: "short",

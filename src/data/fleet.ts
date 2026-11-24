@@ -68,6 +68,8 @@ export interface Booking {
     | "completed"
     | "cancelled";
   createdAt: string;
+  createdAtTimestamp?: number;
+  expiredReason?: string;
   hubName: string;
   hubAddress: string;
   syncedToGoogleSheets?: boolean;
