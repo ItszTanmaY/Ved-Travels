@@ -24,6 +24,7 @@ import VehicleBookingModal from "@/components/VehicleBookingModal";
 import AuthModal from "@/components/AuthModal";
 import MyTripsModal from "@/components/MyTripsModal";
 import HostDashboardModal from "@/components/HostDashboardModal";
+import AdminDashboardModal from "@/components/AdminDashboardModal";
 import { VedTopOffers } from "@/components/VedTopOffers";
 // import { FlexiblePlansCategoriesGrid } from "@/components/FlexiblePlansCategoriesGrid"; // FLEXIBLE SELF-DRIVE PLANS (Commented out per request)
 import { VedExploreGrid } from "@/components/VedExploreGrid";
@@ -995,6 +996,7 @@ export default function Home() {
       <AuthModal />
       <MyTripsModal />
       <HostDashboardModal />
+      <AdminDashboardModal />
 
       {/* Sticky Fixed Mobile Bottom Navigation Bar */}
       <MobileBottomNav />

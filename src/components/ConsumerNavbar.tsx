@@ -24,6 +24,7 @@ export default function ConsumerNavbar() {
     openAuthModal,
     openMyTripsModal,
     openHostDashboard,
+    openAdminDashboard,
     bookings,
   } = useRental();
 
@@ -112,7 +113,28 @@ export default function ConsumerNavbar() {
         <div className="hidden sm:flex items-center gap-3">
           {currentUser ? (
             <div className="relative">
-              {currentUser.role === "host" ? (
+              {currentUser.role === "admin" ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={openAdminDashboard}
+                    className="h-11 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-heading font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                    <span>Admin Operations Desk</span>
+                  </button>
+
+                  <button
+                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    className="h-11 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center gap-2 text-slate-700 text-xs font-semibold cursor-pointer shadow-xs"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
+                      A
+                    </div>
+                    <span className="max-w-[100px] truncate">{currentUser.name}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                </div>
+              ) : currentUser.role === "host" ? (
                 <div className="flex items-center gap-2">
                   <button
                     onClick={openHostDashboard}
@@ -173,7 +195,18 @@ export default function ConsumerNavbar() {
                     </div>
                   </div>
 
-                  {currentUser.role === "host" ? (
+                  {currentUser.role === "admin" ? (
+                    <button
+                      onClick={() => {
+                        setProfileDropdownOpen(false);
+                        openAdminDashboard();
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-emerald-50 text-emerald-900 font-bold flex items-center gap-2 cursor-pointer"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                      <span>Admin Operations Console</span>
+                    </button>
+                  ) : currentUser.role === "host" ? (
                     <button
                       onClick={() => {
                         setProfileDropdownOpen(false);
@@ -288,7 +321,28 @@ export default function ConsumerNavbar() {
                   <p className="text-[11px] text-slate-500">{currentUser.phone}</p>
                 </div>
 
-                {currentUser.role === "host" ? (
+                {currentUser.role === "admin" ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={openAdminDashboard}
+                    className="h-11 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-heading font-bold text-xs uppercase tracking-wider flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+                  >
+                    <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                    <span>Admin Operations Desk</span>
+                  </button>
+
+                  <button
+                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    className="h-11 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center gap-2 text-slate-700 text-xs font-semibold cursor-pointer shadow-xs"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
+                      A
+                    </div>
+                    <span className="max-w-[100px] truncate">{currentUser.name}</span>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
+                </div>
+              ) : currentUser.role === "host" ? (
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);

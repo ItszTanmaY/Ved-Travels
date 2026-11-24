@@ -19,6 +19,10 @@ const ALLOWED_ACTIONS = [
   "submit_vehicle",
   "update_booking_status",
   "approve_vehicle",
+  "reject_vehicle",
+  "register_user",
+  "approve_host",
+  "reject_host",
 ];
 
 export async function POST(request: Request) {
@@ -92,6 +96,7 @@ export async function GET() {
         mode: "local_offline_fallback",
         vehicles: [],
         bookings: [],
+        users: [],
       });
     }
 
@@ -101,7 +106,7 @@ export async function GET() {
         "Content-Type": "application/json",
       },
       redirect: "follow",
-      next: { revalidate: 60 }, // Cache for 60 seconds
+      next: { revalidate: 30 }, // Cache for 30 seconds
     });
 
     const text = await response.text();
@@ -109,7 +114,7 @@ export async function GET() {
     try {
       data = JSON.parse(text);
     } catch {
-      data = { success: false, vehicles: [], bookings: [] };
+      data = { success: false, vehicles: [], bookings: [], users: [] };
     }
 
     return NextResponse.json(data);
@@ -120,6 +125,7 @@ export async function GET() {
       error: error instanceof Error ? error.message : "Fetch error",
       vehicles: [],
       bookings: [],
+      users: [],
     });
   }
 }

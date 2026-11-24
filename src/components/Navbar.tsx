@@ -21,6 +21,7 @@ export function Navbar() {
     openAuthModal,
     openMyTripsModal,
     openHostDashboard,
+    openAdminDashboard,
     bookings,
     setSearchCategory,
   } = useRental();
@@ -128,7 +129,7 @@ export function Navbar() {
                 {currentUser.role === "admin" ? (
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <button
-                      onClick={openHostDashboard}
+                      onClick={openAdminDashboard}
                       className="px-3 sm:px-5 py-1.5 sm:py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-700 hover:bg-emerald-800 text-white shadow-md transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap"
                     >
                       <ShieldAlert className="w-3.5 h-3.5" />
@@ -201,7 +202,7 @@ export function Navbar() {
                       <button
                         onClick={() => {
                           setProfileDropdownOpen(false);
-                          openHostDashboard();
+                          openAdminDashboard();
                         }}
                         className="w-full text-left px-4 py-2 hover:bg-white/5 flex items-center gap-2 text-emerald-300 hover:text-emerald-200 cursor-pointer"
                       >

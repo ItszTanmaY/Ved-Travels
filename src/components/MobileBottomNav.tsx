@@ -12,6 +12,7 @@ export function MobileBottomNav() {
     openAuthModal,
     openMyTripsModal,
     openHostDashboard,
+    openAdminDashboard,
   } = useRental();
 
   const activeBookingsCount = bookings.filter(
@@ -39,7 +40,9 @@ export function MobileBottomNav() {
   };
 
   const handleHostClick = () => {
-    if (currentUser?.role === "host") {
+    if (currentUser?.role === "admin") {
+      openAdminDashboard();
+    } else if (currentUser?.role === "host") {
       openHostDashboard();
     } else {
       openAuthModal("host");
@@ -96,14 +99,21 @@ export function MobileBottomNav() {
         </span>
       </button>
 
-      {/* 4. Host & Earn Highlighted CTA Card */}
+      {/* 4. Host & Earn / Admin Desk CTA Card */}
       <button
         type="button"
         onClick={handleHostClick}
-        className="bg-gradient-to-r from-amber-500 via-[#FF6B00] to-orange-600 text-white px-3.5 py-1.5 rounded-2xl shadow-md font-bold text-[11px] flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer ring-1 ring-amber-400/40"
+        className={cn(
+          "text-white px-3.5 py-1.5 rounded-2xl shadow-md font-bold text-[11px] flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer ring-1",
+          currentUser?.role === "admin"
+            ? "bg-emerald-700 ring-emerald-400/40"
+            : "bg-gradient-to-r from-amber-500 via-[#FF6B00] to-orange-600 ring-amber-400/40"
+        )}
       >
         <Car className="w-3.5 h-3.5 shrink-0" />
-        <span className="tracking-tight whitespace-nowrap">Host & Earn</span>
+        <span className="tracking-tight whitespace-nowrap">
+          {currentUser?.role === "admin" ? "Admin Desk" : "Host & Earn"}
+        </span>
         <Sparkles className="w-3 h-3 text-amber-200 shrink-0" />
       </button>
     </nav>

@@ -35,7 +35,11 @@ export default function MyTripsModal() {
 
   if (!myTripsModalOpen) return null;
 
-  const userBookings = bookings;
+  const userBookings = currentUser?.role === "admin"
+    ? bookings
+    : currentUser
+    ? bookings.filter((b) => b.renterId === currentUser.id || b.renterPhone.includes(currentUser.phone))
+    : bookings;
 
   const handleSaveKyc = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +84,10 @@ export default function MyTripsModal() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-black">
-                      Digital KYC Identity:
+                      Safety ID Verification:
+                    </span>
+                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-semibold border border-slate-200">
+                      Automated DigiLocker — Coming Soon
                     </span>
                     {currentUser?.kycStatus === "verified" ? (
                       <span className="text-[11px] font-bold text-green-700 bg-green-50 px-2 py-0.2 rounded-full flex items-center gap-1 border border-green-200">
@@ -89,7 +96,7 @@ export default function MyTripsModal() {
                       </span>
                     ) : (
                       <span className="text-[11px] font-bold text-[#FF6B00] bg-[#FF6B00]/10 px-2 py-0.2 rounded-full">
-                        Pending
+                        Manual Hub Verification
                       </span>
                     )}
                   </div>

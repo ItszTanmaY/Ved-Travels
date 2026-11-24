@@ -6,9 +6,7 @@ import {
   Booking,
   User,
   INITIAL_VEHICLES,
-  DEMO_RENTER,
-  DEMO_HOST,
-  DEMO_ADMIN,
+  VED_ADMIN_ACCOUNT,
   VADODARA_CENTRAL_HUB,
   VADODARA_LOCATIONS,
   TariffSlabs,
@@ -17,8 +15,12 @@ import { toast } from "sonner";
 import {
   syncBookingToGoogleSheets,
   syncVehicleToGoogleSheets,
+  syncUserToGoogleSheets,
   updateBookingStatusInGoogleSheets,
   approveVehicleInGoogleSheets,
+  rejectVehicleInGoogleSheets,
+  approveHostInGoogleSheets,
+  rejectHostInGoogleSheets,
 } from "@/lib/googleSheets";
 
 export interface DurationOption {
@@ -50,21 +52,28 @@ export interface TariffCalculation {
 interface RentalContextType {
   // Auth
   currentUser: User | null;
+  registeredUsers: User[];
   login: (user: User) => void;
   logout: () => void;
-  loginAsDemoRenter: () => void;
-  loginAsDemoHost: () => void;
-  loginAsDemoAdmin: () => void;
-  updateKyc: (dlNumber: string, aadhaarNumber: string) => void;
+  registerUser: (newUser: Omit<User, "id">) => User;
+  loginWithCredentials: (identifier: string, secret: string) => User | null;
+  loginAsAdmin: (secret: string) => boolean;
+  approveHostAccount: (userId: string) => void;
+  rejectHostAccount: (userId: string) => void;
+  updateKyc: (dlNumber: string, aadhaarNumber: string, dlPhotoUrl?: string) => void;
 
   // Fleet
   vehicles: Vehicle[];
   toggleVehicleAvailability: (vehicleId: string) => void;
   updateVehiclePricing: (vehicleId: string, hourlyRate: number, dailyRate: number) => void;
   addVehicle: (
-    newVehicle: Omit<Vehicle, "id" | "rating" | "tripsCount" | "approvalStatus" | "slabs" | "minHours"> & {
+    newVehicle: Omit<
+      Vehicle,
+      "id" | "rating" | "tripsCount" | "approvalStatus" | "slabs" | "minHours" | "available"
+    > & {
       slabs?: TariffSlabs;
       minHours?: number;
+      available?: boolean;
     }
   ) => void;
   approveVehicle: (vehicleId: string) => void;
@@ -81,10 +90,16 @@ interface RentalContextType {
     deliveryAddress?: string;
     paymentMode?: "upi_advance" | "pay_at_hub" | "whatsapp_booking";
     upiUtr?: string;
+    dlPhotoUrl?: string;
   }) => Booking;
   verifyHandoverOtp: (bookingId: string, enteredOtp: string) => boolean;
   verifyOfflineBooking: (bookingId: string) => void;
   cancelBooking: (bookingId: string) => void;
+  markBookingTripStatus: (
+    bookingId: string,
+    status: "confirmed" | "in_trip" | "completed" | "cancelled"
+  ) => void;
+  clearHostPayout: (bookingId: string) => void;
   googleSheetsSyncing: boolean;
 
   // Search & Filter state
@@ -122,6 +137,10 @@ interface RentalContextType {
   openHostDashboard: () => void;
   closeHostDashboard: () => void;
 
+  adminDashboardOpen: boolean;
+  openAdminDashboard: () => void;
+  closeAdminDashboard: () => void;
+
   selectedVehicle: Vehicle | null;
   openBookingModal: (vehicle: Vehicle) => void;
   closeBookingModal: () => void;
@@ -129,13 +148,15 @@ interface RentalContextType {
 
 const RentalContext = createContext<RentalContextType | undefined>(undefined);
 
-const VEHICLES_KEY = "ved_travels_vehicles_v5_min6h";
-const BOOKINGS_KEY = "ved_travels_bookings_v4";
-const USER_KEY = "ved_travels_user_v4";
+const VEHICLES_KEY = "ved_travels_vehicles_v6_real";
+const BOOKINGS_KEY = "ved_travels_bookings_v6_real";
+const USER_KEY = "ved_travels_user_v6_real";
+const REGISTERED_USERS_KEY = "ved_travels_registered_users_v6";
 
 export function RentalProvider({ children }: { children: React.ReactNode }) {
   // State initialization with localStorage fallback
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [registeredUsers, setRegisteredUsers] = useState<User[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>(INITIAL_VEHICLES);
   const [bookings, setBookings] = useState<Booking[]>([]);
 
@@ -152,6 +173,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   const [authModalDefaultRole, setAuthModalDefaultRole] = useState<"renter" | "host" | "admin">("renter");
   const [myTripsModalOpen, setMyTripsModalOpen] = useState(false);
   const [hostDashboardOpen, setHostDashboardOpen] = useState(false);
+  const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [googleSheetsSyncing, setGoogleSheetsSyncing] = useState<boolean>(false);
 
@@ -159,17 +181,31 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem(USER_KEY);
-      if (storedUser) setCurrentUser(JSON.parse(storedUser));
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        // Exclude old mock demo users
+        if (parsed && !parsed.id?.startsWith("demo-")) {
+          setCurrentUser(parsed);
+        } else {
+          localStorage.removeItem(USER_KEY);
+        }
+      }
+
+      const storedRegUsers = localStorage.getItem(REGISTERED_USERS_KEY);
+      if (storedRegUsers) {
+        const parsedUsers = JSON.parse(storedRegUsers);
+        if (Array.isArray(parsedUsers)) {
+          setRegisteredUsers(parsedUsers.filter((u: User) => !u.id?.startsWith("demo-")));
+        }
+      }
 
       const storedVehicles = localStorage.getItem(VEHICLES_KEY);
       if (storedVehicles) {
         const parsed = JSON.parse(storedVehicles);
-        // Ensure fresh fleet with min 6h cars & zero deposit
         if (
           Array.isArray(parsed) &&
-          parsed.length === INITIAL_VEHICLES.length &&
+          parsed.length >= INITIAL_VEHICLES.length &&
           parsed[0]?.slabs &&
-          parsed[3]?.minHours === 6 &&
           parsed[0]?.securityDeposit === 0
         ) {
           setVehicles(parsed);
@@ -183,7 +219,10 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
 
       const storedBookings = localStorage.getItem(BOOKINGS_KEY);
       if (storedBookings) {
-        setBookings(JSON.parse(storedBookings));
+        const parsedB = JSON.parse(storedBookings);
+        if (Array.isArray(parsedB)) {
+          setBookings(parsedB);
+        }
       }
     } catch (e) {
       console.error("Failed to load local storage data", e);
@@ -198,6 +237,11 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     } else {
       localStorage.removeItem(USER_KEY);
     }
+  };
+
+  const saveRegisteredUsers = (users: User[]) => {
+    setRegisteredUsers(users);
+    localStorage.setItem(REGISTERED_USERS_KEY, JSON.stringify(users));
   };
 
   const saveVehicles = (list: Vehicle[]) => {
@@ -215,10 +259,11 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     saveUser(user);
     const roleLabel =
       user.role === "admin"
-        ? "Fleet Operations Admin"
+        ? "Operations Lead (Admin)"
         : user.role === "host"
-        ? "Vehicle Host (Partner)"
+        ? "Vehicle Host Partner"
         : "Customer (Renter)";
+
     toast.success(`Welcome to Ved Travels, ${user.name}!`, {
       description: `Active role: ${roleLabel}`,
     });
@@ -230,32 +275,162 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     toast.info("Logged out from Ved Travels");
     setHostDashboardOpen(false);
     setMyTripsModalOpen(false);
+    setAdminDashboardOpen(false);
   };
 
-  const loginAsDemoRenter = () => {
-    login(DEMO_RENTER);
+  const registerUser = (newUser: Omit<User, "id">): User => {
+    const existing = registeredUsers.find(
+      (u) =>
+        u.phone.replace(/\D/g, "") === newUser.phone.replace(/\D/g, "") ||
+        (newUser.email && u.email?.toLowerCase() === newUser.email?.toLowerCase())
+    );
+
+    if (existing) {
+      toast.error("Account already exists with this phone or email!", {
+        description: "Please login with your PIN/Password.",
+      });
+      throw new Error("User already exists");
+    }
+
+    const created: User = {
+      ...newUser,
+      id: `usr-${Date.now()}`,
+      hostStatus: newUser.role === "host" ? "pending_approval" : "approved",
+      kycStatus: newUser.kycStatus || "unverified",
+      createdAt: new Date().toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+    };
+
+    const updatedList = [created, ...registeredUsers];
+    saveRegisteredUsers(updatedList);
+    login(created);
+
+    // Sync user registration to Google Sheets "Users" sheet
+    syncUserToGoogleSheets(created).then((res) => {
+      if (res && res.success) {
+        toast.success("Profile Synced to Database!", {
+          description: "Registered securely in Ved Travels database.",
+        });
+      }
+    });
+
+    if (created.role === "host") {
+      toast.info("Host Account Under Review", {
+        description: "Ved Travels team will verify and activate your partner portal shortly.",
+        duration: 8000,
+      });
+    }
+
+    return created;
   };
 
-  const loginAsDemoHost = () => {
-    login(DEMO_HOST);
+  const loginWithCredentials = (identifier: string, secret: string): User | null => {
+    const cleanId = identifier.trim().toLowerCase();
+    const cleanSecret = secret.trim();
+
+    // Check if business owner admin
+    if (
+      (cleanId === VED_ADMIN_ACCOUNT.email.toLowerCase() ||
+        cleanId === VED_ADMIN_ACCOUNT.phone ||
+        cleanId === "admin" ||
+        cleanId === "shantanu") &&
+      (cleanSecret === "0777" || cleanSecret === "admin0777" || cleanSecret === "ved0777")
+    ) {
+      login(VED_ADMIN_ACCOUNT);
+      return VED_ADMIN_ACCOUNT;
+    }
+
+    // Match registered users
+    const matched = registeredUsers.find((u) => {
+      const phoneMatches = u.phone.replace(/\D/g, "").includes(cleanId.replace(/\D/g, ""));
+      const emailMatches = u.email && u.email.toLowerCase() === cleanId;
+      return phoneMatches || emailMatches;
+    });
+
+    if (!matched) {
+      toast.error("No account found with this phone number or email", {
+        description: "Please register a new account to continue.",
+      });
+      return null;
+    }
+
+    if (matched.password && matched.password !== cleanSecret) {
+      toast.error("Incorrect Password / PIN", {
+        description: "Please re-enter your 4-digit PIN or password.",
+      });
+      return null;
+    }
+
+    login(matched);
+    return matched;
   };
 
-  const loginAsDemoAdmin = () => {
-    login(DEMO_ADMIN);
+  const loginAsAdmin = (secret: string): boolean => {
+    if (secret.trim() === "0777" || secret.trim() === "admin0777" || secret.trim() === "ved0777") {
+      login(VED_ADMIN_ACCOUNT);
+      toast.success("Welcome, Shantanu Shekhar!", {
+        description: "Admin Operations Console Unlocked.",
+      });
+      return true;
+    } else {
+      toast.error("Invalid Admin Passcode");
+      return false;
+    }
   };
 
-  const updateKyc = (dlNumber: string, aadhaarNumber: string) => {
+  const approveHostAccount = (userId: string) => {
+    const updated = registeredUsers.map((u) =>
+      u.id === userId ? { ...u, hostStatus: "approved" as const } : u
+    );
+    saveRegisteredUsers(updated);
+
+    if (currentUser && currentUser.id === userId) {
+      saveUser({ ...currentUser, hostStatus: "approved" });
+    }
+
+    const host = registeredUsers.find((u) => u.id === userId);
+    toast.success(`Host Partner Approved: ${host?.name || "Host"}`, {
+      description: "Partner can now list machines and receive client bookings.",
+    });
+
+    approveHostInGoogleSheets(userId);
+  };
+
+  const rejectHostAccount = (userId: string) => {
+    const updated = registeredUsers.map((u) =>
+      u.id === userId ? { ...u, hostStatus: "rejected" as const } : u
+    );
+    saveRegisteredUsers(updated);
+
+    if (currentUser && currentUser.id === userId) {
+      saveUser({ ...currentUser, hostStatus: "rejected" });
+    }
+
+    toast.error("Host Partner Rejected");
+    rejectHostInGoogleSheets(userId);
+  };
+
+  const updateKyc = (dlNumber: string, aadhaarNumber: string, dlPhotoUrl?: string) => {
     if (!currentUser) return;
     const updated: User = {
       ...currentUser,
       dlNumber,
       aadhaarNumber,
+      dlPhotoUrl: dlPhotoUrl || currentUser.dlPhotoUrl,
       kycStatus: "verified",
       dlVerified: true,
     };
     saveUser(updated);
-    toast.success("KYC Verified Successfully!", {
-      description: "Driving License & Aadhaar authenticated for paperless vehicle handover.",
+
+    // Also update in registered list
+    const updatedList = registeredUsers.map((u) => (u.id === currentUser.id ? updated : u));
+    saveRegisteredUsers(updatedList);
+
+    toast.success("Safety Documents Verified Successfully!", {
+      description: "Driving License recorded for paperless vehicle handover.",
     });
   };
 
@@ -294,26 +469,32 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addVehicle = (
-    newVehicle: Omit<Vehicle, "id" | "rating" | "tripsCount" | "approvalStatus" | "slabs" | "minHours"> & {
+    newVehicle: Omit<
+      Vehicle,
+      "id" | "rating" | "tripsCount" | "approvalStatus" | "slabs" | "minHours" | "available"
+    > & {
       slabs?: TariffSlabs;
       minHours?: number;
+      available?: boolean;
     }
   ) => {
     const id = `host-veh-${Date.now()}`;
     const isCar = newVehicle.category === "car";
-    const defaultSlabs: TariffSlabs = newVehicle.slabs || (isCar
-      ? {
-          hr6: Math.round(newVehicle.dailyRate * 0.45) || 1600,
-          hr12: Math.round(newVehicle.dailyRate * 0.72) || 2500,
-          hr24: newVehicle.dailyRate || 3500,
-        }
-      : {
-          hr1: newVehicle.hourlyRate || 100,
-          hr3: Math.round((newVehicle.hourlyRate || 100) * 2.6),
-          hr6: Math.round((newVehicle.hourlyRate || 100) * 5.6),
-          hr12: Math.round((newVehicle.hourlyRate || 100) * 10.5),
-          hr24: newVehicle.dailyRate || 1650,
-        });
+    const defaultSlabs: TariffSlabs =
+      newVehicle.slabs ||
+      (isCar
+        ? {
+            hr6: Math.round(newVehicle.dailyRate * 0.45) || 1600,
+            hr12: Math.round(newVehicle.dailyRate * 0.72) || 2500,
+            hr24: newVehicle.dailyRate || 3500,
+          }
+        : {
+            hr1: newVehicle.hourlyRate || 100,
+            hr3: Math.round((newVehicle.hourlyRate || 100) * 2.6),
+            hr6: Math.round((newVehicle.hourlyRate || 100) * 5.6),
+            hr12: Math.round((newVehicle.hourlyRate || 100) * 10.5),
+            hr24: newVehicle.dailyRate || 1650,
+          });
 
     const vehicleWithMeta: Vehicle = {
       ...newVehicle,
@@ -357,7 +538,6 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       description: "Now live on Ved Travels Vadodara homepage for instant customer bookings.",
     });
 
-    // Sync status to Google Sheets
     approveVehicleInGoogleSheets(vehicleId);
   };
 
@@ -369,6 +549,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     toast.error("Vehicle listing rejected", {
       description: "Please ensure registration is GJ-06 and commercial insurance details are complete.",
     });
+    rejectVehicleInGoogleSheets(vehicleId);
   };
 
   // Real time-slot overlap check
@@ -378,6 +559,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         b.vehicleId === vehicleId &&
         (b.status === "confirmed" ||
           b.status === "confirmed_pay_at_hub" ||
+          b.status === "confirmed_whatsapp" ||
           b.status === "pending_offline_verification" ||
           b.status === "in_trip") &&
         b.durationHours === duration.hours
@@ -395,12 +577,11 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     const isCar = vehicle.category === "car" || vehicle.minHours >= 6;
 
     if (isCar) {
-      // Smart Car Rule: Cars start at 6 hours minimum
       if (duration.hours <= 6) {
         baseRent = vehicle.slabs?.hr6 || Math.round(vehicle.dailyRate * 0.45);
         rateText = duration.hours < 6 ? "Min 6 Hrs Package" : "6 Hrs Slab";
       } else if (duration.hours <= 12) {
-        baseRent = vehicle.slabs?.hr12 || (vehicle.hourlyRate * 12);
+        baseRent = vehicle.slabs?.hr12 || vehicle.hourlyRate * 12;
         rateText = "12 Hrs Slab";
       } else if (duration.hours <= 24) {
         baseRent = vehicle.slabs?.hr24 || vehicle.dailyRate;
@@ -412,18 +593,17 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         rateText = `₹${dayRate.toLocaleString("en-IN")}/day × ${days} days`;
       }
     } else {
-      // Two-Wheelers: 1h, 3h, 6h, 12h, 24h exact slabs
       if (duration.hours <= 1) {
         baseRent = vehicle.slabs?.hr1 ?? vehicle.hourlyRate;
         rateText = "1 Hr Slab";
       } else if (duration.hours <= 3) {
-        baseRent = vehicle.slabs?.hr3 ?? (vehicle.hourlyRate * 3);
+        baseRent = vehicle.slabs?.hr3 ?? vehicle.hourlyRate * 3;
         rateText = "3 Hrs Slab";
       } else if (duration.hours <= 6) {
-        baseRent = vehicle.slabs?.hr6 ?? (vehicle.hourlyRate * 6);
+        baseRent = vehicle.slabs?.hr6 ?? vehicle.hourlyRate * 6;
         rateText = "6 Hrs Slab";
       } else if (duration.hours <= 12) {
-        baseRent = vehicle.slabs?.hr12 ?? (vehicle.hourlyRate * 12);
+        baseRent = vehicle.slabs?.hr12 ?? vehicle.hourlyRate * 12;
         rateText = "12 Hrs Slab";
       } else if (duration.hours <= 24) {
         baseRent = vehicle.slabs?.hr24 ?? vehicle.dailyRate;
@@ -459,6 +639,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     deliveryAddress?: string;
     paymentMode?: "upi_advance" | "pay_at_hub" | "whatsapp_booking";
     upiUtr?: string;
+    dlPhotoUrl?: string;
   }) => {
     // Overlapping double-booking check
     if (isVehicleSlotLocked(params.vehicle.id, params.duration)) {
@@ -468,7 +649,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       throw new Error("Slot already booked");
     }
 
-    // Generate secure 4-digit handover OTP
+    // Generate truly random 4-digit handover OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     const bookingCode = `VED-GJ06-${Math.floor(10000 + Math.random() * 90000)}`;
 
@@ -488,6 +669,11 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         : "confirmed_pay_at_hub";
 
     const resolvedLocation = params.pickupLocation || selectedLocation || "Vadodara Railway Station";
+
+    // Host earnings calculation (75% to Host, 25% Platform Fee if host-owned)
+    const isHostVehicle = params.vehicle.ownerType === "host";
+    const hostEarnings = isHostVehicle ? Math.round(baseRent * 0.75) : 0;
+    const platformFee = isHostVehicle ? baseRent - hostEarnings : 0;
 
     const newBooking: Booking = {
       id: `booking-${Date.now()}`,
@@ -516,8 +702,18 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       otp,
       paymentMode: resolvedPaymentMode,
       upiUtr: params.upiUtr,
+      dlPhotoUrl: params.dlPhotoUrl || currentUser?.dlPhotoUrl,
+      hostName: params.vehicle.hostName || "Ved Fleet Hub",
+      hostId: params.vehicle.hostId,
+      hostEarnings,
+      platformFee,
+      hostPayoutStatus: isHostVehicle ? "pending" : undefined,
       status,
-      createdAt: "Today",
+      createdAt: new Date().toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
       hubName: resolvedLocation,
       hubAddress: `${resolvedLocation}, Vadodara, Gujarat`,
       syncedToGoogleSheets: false,
@@ -586,6 +782,42 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const markBookingTripStatus = (
+    bookingId: string,
+    status: "confirmed" | "in_trip" | "completed" | "cancelled"
+  ) => {
+    const booking = bookings.find((b) => b.id === bookingId);
+    if (!booking) return;
+
+    const updated = bookings.map((b) => (b.id === bookingId ? { ...b, status } : b));
+    saveBookings(updated);
+
+    if (status === "completed" || status === "cancelled") {
+      // Release slot
+      const updatedVehicles = vehicles.map((v) => {
+        if (v.id === booking.vehicleId && v.bookedSlots) {
+          return {
+            ...v,
+            bookedSlots: v.bookedSlots.filter((s) => s.bookingId !== bookingId),
+          };
+        }
+        return v;
+      });
+      saveVehicles(updatedVehicles);
+    }
+
+    toast.success(`Booking Status Updated: ${status.toUpperCase()}`);
+    updateBookingStatusInGoogleSheets(booking.bookingCode, status);
+  };
+
+  const clearHostPayout = (bookingId: string) => {
+    const updated = bookings.map((b) =>
+      b.id === bookingId ? { ...b, hostPayoutStatus: "paid" as const } : b
+    );
+    saveBookings(updated);
+    toast.success("Payout Cleared for Host Partner!");
+  };
+
   const verifyOfflineBooking = (bookingId: string) => {
     const booking = bookings.find((b) => b.id === bookingId);
     if (!booking) return;
@@ -595,7 +827,9 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     );
     saveBookings(updated);
     toast.success("Payment Verified & Slot Confirmed!", {
-      description: `Renter ${booking.renterName}'s booking is confirmed. Ready for pickup at ${booking.pickupLocation || booking.hubName}.`,
+      description: `Renter ${booking.renterName}'s booking is confirmed. Ready for pickup at ${
+        booking.pickupLocation || booking.hubName
+      }.`,
     });
     // Sync to Google Sheets
     updateBookingStatusInGoogleSheets(booking.bookingCode, "confirmed");
@@ -642,9 +876,11 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   const openHostDashboard = () => setHostDashboardOpen(true);
   const closeHostDashboard = () => setHostDashboardOpen(false);
 
+  const openAdminDashboard = () => setAdminDashboardOpen(true);
+  const closeAdminDashboard = () => setAdminDashboardOpen(false);
+
   const openBookingModal = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
-    // Smart Car Rule: Auto-enforce 6h if car is selected and current duration is < 6h
     if (vehicle.category === "car" && selectedDuration.hours < 6) {
       setSelectedDuration(DURATION_PRESETS[2]); // 6h
       toast.info("Cars require minimum 6-hour booking", {
@@ -658,11 +894,14 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     <RentalContext.Provider
       value={{
         currentUser,
+        registeredUsers,
         login,
         logout,
-        loginAsDemoRenter,
-        loginAsDemoHost,
-        loginAsDemoAdmin,
+        registerUser,
+        loginWithCredentials,
+        loginAsAdmin,
+        approveHostAccount,
+        rejectHostAccount,
         updateKyc,
         vehicles,
         toggleVehicleAvailability,
@@ -676,6 +915,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         verifyHandoverOtp,
         verifyOfflineBooking,
         cancelBooking,
+        markBookingTripStatus,
+        clearHostPayout,
         googleSheetsSyncing,
         searchCategory,
         setSearchCategory,
@@ -700,6 +941,9 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         hostDashboardOpen,
         openHostDashboard,
         closeHostDashboard,
+        adminDashboardOpen,
+        openAdminDashboard,
+        closeAdminDashboard,
         selectedVehicle,
         openBookingModal,
         closeBookingModal,

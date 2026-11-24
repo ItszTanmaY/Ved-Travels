@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Vehicle,
   Booking,
   VADODARA_CENTRAL_HUB,
   VADODARA_LOCATIONS,
   VED_BUSINESS_CONFIG,
-  VED_UPI_CONFIG,
 } from "@/data/fleet";
-import { useRental, DURATION_PRESETS, DurationOption } from "@/context/RentalContext";
+import { useRental, DURATION_PRESETS } from "@/context/RentalContext";
 import { formatINR } from "@/lib/utils";
+import { compressImageFile } from "@/lib/imageCompression";
 import {
   X,
   MapPin,
@@ -21,17 +21,16 @@ import {
   FileCheck,
   PhoneCall,
   ExternalLink,
-  CreditCard,
-  Sparkles,
-  AlertTriangle,
-  Smartphone,
-  Banknote,
   KeyRound,
-  FileSpreadsheet,
   RefreshCw,
   Building2,
   MessageCircle,
   Tag,
+  Upload,
+  Camera,
+  Image as ImageIcon,
+  AlertCircle,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,15 +50,17 @@ export default function VehicleBookingModal() {
     currentUser,
     openAuthModal,
     openMyTripsModal,
-    updateKyc,
     googleSheetsSyncing,
   } = useRental();
 
   const [bookingLocation, setBookingLocation] = useState<string>(selectedLocation || "Vadodara Railway Station");
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [dlInput, setDlInput] = useState(currentUser?.dlNumber || "");
-  const [aadhaarInput, setAadhaarInput] = useState(currentUser?.aadhaarNumber || "");
-  const [kycFormOpen, setKycFormOpen] = useState(false);
+
+  // Safety DL Photo Upload state
+  const [dlPhoto, setDlPhoto] = useState<string | null>(currentUser?.dlPhotoUrl || null);
+  const [dlNumber, setDlNumber] = useState<string>(currentUser?.dlNumber || "");
+  const [isCompressingDl, setIsCompressingDl] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // WhatsApp & Direct Booking state
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
@@ -71,6 +72,16 @@ export default function VehicleBookingModal() {
       setBookingLocation(selectedLocation);
     }
   }, [selectedLocation]);
+
+  // Sync user's existing DL photo if available
+  useEffect(() => {
+    if (currentUser?.dlPhotoUrl && !dlPhoto) {
+      setDlPhoto(currentUser.dlPhotoUrl);
+    }
+    if (currentUser?.dlNumber && !dlNumber) {
+      setDlNumber(currentUser.dlNumber);
+    }
+  }, [currentUser]);
 
   // Smart Car Rule: Enforce min 6h for cars
   useEffect(() => {
@@ -94,14 +105,28 @@ export default function VehicleBookingModal() {
   const isSlotLocked = isVehicleSlotLocked(selectedVehicle.id, selectedDuration);
   const pricing = calculateTariff(selectedVehicle, selectedDuration, doorstepDelivery);
 
-  const handleKycSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!dlInput || !aadhaarInput) {
-      toast.error("Please enter Driving License and Aadhaar number");
+  const handleDlFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (JPEG, PNG, WEBP)");
       return;
     }
-    updateKyc(dlInput, aadhaarInput);
-    setKycFormOpen(false);
+
+    setIsCompressingDl(true);
+    try {
+      const compressedDataUrl = await compressImageFile(file, 1200, 0.75);
+      setDlPhoto(compressedDataUrl);
+      toast.success("Driving License Photo Uploaded!", {
+        description: "Safety photo compressed & attached for quick key handover.",
+      });
+    } catch (err) {
+      console.error("Compression error", err);
+      toast.error("Could not process photo. Please try another image.");
+    } finally {
+      setIsCompressingDl(false);
+    }
   };
 
   const handleClose = () => {
@@ -118,10 +143,20 @@ export default function VehicleBookingModal() {
     }
 
     if (!currentUser) {
-      toast.info("Please login or use 1-click Demo Account", {
-        description: "Opening login modal...",
+      toast.info("Please sign in or create an account to proceed", {
+        description: "Opening registration/login modal...",
       });
       openAuthModal("renter");
+      return;
+    }
+
+    if (!dlPhoto) {
+      toast.error("Driving License / ID Photo Required", {
+        description: "Please upload a photo of your DL / Govt ID for vehicle safety clearance.",
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
       return;
     }
 
@@ -136,6 +171,7 @@ export default function VehicleBookingModal() {
           ? deliveryAddress || `${bookingLocation}, Vadodara`
           : undefined,
         paymentMode: "whatsapp_booking",
+        dlPhotoUrl: dlPhoto,
       });
 
       setConfirmedBooking(booking);
@@ -169,6 +205,7 @@ export default function VehicleBookingModal() {
         `• *Pickup / Handover Location:* ${b.pickupLocation || b.hubName}\n` +
         `• *Start Date:* ${b.startDate}\n` +
         `• *Doorstep Delivery:* ${b.doorstepDelivery ? `Yes (+₹199) to ${b.deliveryAddress}` : `No (Hub Pickup at ${b.pickupLocation})`}\n` +
+        `• *Safety Verification:* DL / Govt ID Photo Attached\n` +
         `• *Payment Mode:* Direct via WhatsApp / On Pickup (Cash or UPI)\n` +
         `• *Total Estimated Tariff:* ${formatINR(b.totalAmount)}\n` +
         `----------------------------------------\n` +
@@ -256,6 +293,19 @@ export default function VehicleBookingModal() {
               </p>
             </div>
 
+            {/* Safety DL Photo status note */}
+            {confirmedBooking.dlPhotoUrl && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl max-w-md mx-auto flex items-center justify-between text-xs text-emerald-900">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>Driving License Photo attached for express handover.</span>
+                </div>
+                <span className="text-[10px] font-bold bg-white text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                  Attached
+                </span>
+              </div>
+            )}
+
             {/* WhatsApp & Handover Payment Status pill */}
             <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl max-w-md mx-auto text-left text-xs space-y-1">
               <div className="flex items-center justify-between">
@@ -314,7 +364,7 @@ export default function VehicleBookingModal() {
           </div>
         ) : (
           /* ============================================================== */
-          /* VIEW 2: OFFLINE RESERVATION FORM */
+          /* VIEW 2: RESERVATION FORM */
           /* ============================================================== */
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1 overscroll-contain">
             {/* Vehicle visual banner */}
@@ -379,7 +429,7 @@ export default function VehicleBookingModal() {
               {/* Slot Lock Warning Banner */}
               {isSlotLocked && (
                 <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-2.5 text-amber-900 mt-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <div className="text-xs">
                     <span className="font-bold block">Vehicle Reserved for this Time Slot</span>
                     This vehicle is currently reserved for the selected {selectedDuration.label}. Please select another duration or browse other fleet machines.
@@ -481,6 +531,98 @@ export default function VehicleBookingModal() {
               </div>
             </div>
 
+            {/* MANDATORY SAFETY DOCUMENT: DIRECT FILE UPLOAD (CAMERA / GALLERY) */}
+            <div className="space-y-3 p-4 rounded-2xl bg-white border-2 border-emerald-300 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>Renter Safety ID Verification</span>
+                      <span className="text-[10px] text-red-600 font-extrabold">*Mandatory</span>
+                    </h5>
+                    <span className="text-[10px] text-slate-500 block">
+                      Direct photo upload of Driving License or Govt ID
+                    </span>
+                  </div>
+                </div>
+
+                {/* Coming soon badge */}
+                <span className="text-[9px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200 px-2.5 py-1 rounded-full">
+                  Automated DigiLocker — Coming Soon
+                </span>
+              </div>
+
+              {/* Photo preview or upload button */}
+              {dlPhoto ? (
+                <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-16 h-12 rounded-lg overflow-hidden border border-emerald-300 bg-white shrink-0">
+                      <img src={dlPhoto} alt="Driving License" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-emerald-950 block truncate">
+                        ID Document Photo Attached
+                      </span>
+                      <span className="text-[10px] text-emerald-700 block">
+                        Compressed & ready for verification at handover
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-[11px] font-bold text-emerald-800 bg-white hover:bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-lg cursor-pointer transition-all"
+                    >
+                      Change
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDlPhoto(null)}
+                      className="text-[11px] font-bold text-red-600 hover:text-red-700 px-1.5 py-1 cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-emerald-400 hover:border-emerald-600 bg-emerald-50/50 hover:bg-emerald-50 rounded-xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
+                >
+                  <div className="w-10 h-10 rounded-full bg-white shadow-xs border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-110 transition-transform">
+                    {isCompressingDl ? (
+                      <RefreshCw className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Camera className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-emerald-950 block">
+                      {isCompressingDl ? "Compressing Image..." : "Upload Driving License / ID Photo"}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">
+                      Tap to open camera or choose from gallery (Auto-compressed)
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleDlFileUpload}
+                className="hidden"
+              />
+            </div>
+
             {/* Promo / Coupon Offers (Coming Soon) */}
             <div className="p-3.5 rounded-2xl bg-[#FAFAF9] border border-black/5 flex items-center justify-between gap-3 text-xs select-none">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -561,28 +703,6 @@ export default function VehicleBookingModal() {
               <p className="text-[11px] text-slate-600 leading-relaxed">
                 No payment gateways, Razorpay, or convenience fees. Click below to submit your reservation directly to our official WhatsApp. Pay easily via UPI or Cash on vehicle key handover at <strong className="text-slate-900">{bookingLocation}</strong>.
               </p>
-            </div>
-
-            {/* KYC Check note */}
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2.5">
-                <FileCheck className="w-4 h-4 text-[#059669] shrink-0" />
-                <div>
-                  <span className="font-bold text-black block">Original DL & Aadhaar Required</span>
-                  <span className="text-[11px] text-black/50">
-                    Must be presented at physical key handover for zero-paperwork verification.
-                  </span>
-                </div>
-              </div>
-              {currentUser?.kycStatus === "verified" ? (
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                  Verified
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold text-slate-600 bg-slate-200 px-2 py-0.5 rounded-full">
-                  Bring at Hub
-                </span>
-              )}
             </div>
 
             {/* Submit Reservation via WhatsApp Button */}

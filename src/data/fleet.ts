@@ -70,6 +70,12 @@ export interface Booking {
   hubName: string;
   hubAddress: string;
   syncedToGoogleSheets?: boolean;
+  dlPhotoUrl?: string;
+  hostName?: string;
+  hostId?: string;
+  hostPayoutStatus?: "pending" | "paid";
+  hostEarnings?: number;
+  platformFee?: number;
 }
 
 export const VED_BUSINESS_CONFIG = {
@@ -100,12 +106,16 @@ export interface User {
   name: string;
   phone: string;
   email: string;
+  password?: string;
   role: "renter" | "host" | "admin";
   avatar?: string;
+  hostStatus?: "approved" | "pending_approval" | "rejected";
   kycStatus: "unverified" | "pending" | "verified";
   dlNumber?: string;
   aadhaarNumber?: string;
+  dlPhotoUrl?: string;
   dlVerified?: boolean;
+  createdAt?: string;
 }
 
 // Exact 6 Vadodara Service Points
@@ -459,41 +469,13 @@ export const INITIAL_VEHICLES: Vehicle[] = [
   },
 ];
 
-export const DEMO_RENTER: User = {
-  id: "demo-renter-1",
-  name: "Amit Dave",
-  phone: "9825123456",
-  email: "amit.dave@vedtravels.in",
-  role: "renter",
-  avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-  kycStatus: "verified",
-  dlNumber: "GJ06 20190048192",
-  aadhaarNumber: "XXXX XXXX 8291",
-  dlVerified: true,
-};
-
-export const DEMO_HOST: User = {
-  id: "demo-host-1",
-  name: "Keval Pandya",
-  phone: "9825987654",
-  email: "keval.host@vedtravels.in",
-  role: "host",
-  avatar: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80",
-  kycStatus: "verified",
-  dlNumber: "GJ06 20150012481",
-  aadhaarNumber: "XXXX XXXX 5510",
-  dlVerified: true,
-};
-
-export const DEMO_ADMIN: User = {
-  id: "demo-admin-1",
+export const VED_ADMIN_ACCOUNT: User = {
+  id: "admin-shantanu-0777",
   name: "Shantanu Shekhar",
   phone: "9546883777",
   email: "vedtravels0777@gmail.com",
   role: "admin",
-  avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
   kycStatus: "verified",
-  dlNumber: "GJ06 20120000101",
-  aadhaarNumber: "XXXX XXXX 1001",
   dlVerified: true,
 };
+

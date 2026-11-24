@@ -1,39 +1,26 @@
 /**
  * =========================================================================
- * VED TRAVELS VADODARA — 100% ALL-IN-ONE GOOGLE APPS SCRIPT DATABASE
+ * VED TRAVELS VADODARA — 100% ALL-IN-ONE GOOGLE APPS SCRIPT DATABASE (v2)
  * =========================================================================
  * 
- * 📌 SIRF YE EK HI FILE COPY KARNI HAI (Koi dusri file nahi chahiye):
+ * Includes 3 Core Production Tables:
+ * 1. "Bookings" — Real client reservations, OTPs, slab details, payment modes
+ * 2. "Vehicles" — Fleet inventory & newly submitted Host Partner vehicles
+ * 3. "Users"    — Registered Customers, Host Partners (with approval states)
  * 
- * STEP 1: Google Sheets kholo (https://sheets.new) aur name rakho: "Ved Travels DB".
- * STEP 2: Top menu me click karo: Extensions > Apps Script.
- * STEP 3: Editor me jo bhi pehle se likha ho sab delete karke ye pura code paste kar do.
- * STEP 4: (AUTOMATIC TABLE CREATION):
- *         Upar dropdown me "initialSetup" select karo aur "Run" button dabao!
- *         Aapke sheet me "Bookings" aur "Vehicles" dono tables instantly auto-create ho jayenge!
- * STEP 5: (WEB APP DEPLOY):
- *         Top-right me "Deploy" > "New deployment" par click karo.
- *         Select type (Gear ⚙️) > "Web app".
- *         Description: "Ved Travels Live API"
- *         Execute as: "Me"
- *         Who has access: "Anyone" (Ye zaroori hai taaki website se data aa sake)
- *         Click "Deploy" > Review Permissions > Advanced > Go to Untitled (unsafe) > Allow.
- * STEP 6: Copy Web App URL aur `.env.local` me paste karo:
- *         NEXT_PUBLIC_GOOGLE_SHEETS_API_URL=https://script.google.com/macros/s/XXXX/exec
- * 
+ * 📌 STEP 1: Google Sheets kholo (https://sheets.new) aur name rakho: "Ved Travels DB".
+ * 📌 STEP 2: Top menu me click karo: Extensions > Apps Script.
+ * 📌 STEP 3: Sab delete karke ye code paste kar do.
+ * 📌 STEP 4: "initialSetup" select karo aur "Run" dabao (Dono 3 tables auto create ho jayenge).
+ * 📌 STEP 5: "Deploy" > "New deployment" > Web app (Execute as Me, Access: Anyone).
+ * 📌 STEP 6: Web App URL copy karke .env.local me paste karo.
  * =========================================================================
  */
 
-/**
- * ⚡ 1-CLICK AUTO TABLE CREATOR
- * Apps Script me dropdown me "initialSetup" choose karke "Run" dabao.
- * Dono tables automatically ban jayenge!
- */
 function initialSetup() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var result = setupDatabaseSheets(ss);
 
-  // Agar default "Sheet1" empty hai toh use remove kar do
   var defaultSheet = ss.getSheetByName("Sheet1");
   if (defaultSheet && ss.getSheets().length > 1) {
     try {
@@ -41,17 +28,14 @@ function initialSetup() {
     } catch (e) {}
   }
 
-  Logger.log("✅ Ved Travels Database Tables created successfully!");
+  Logger.log("✅ Ved Travels Database Tables (Bookings, Vehicles, Users) created successfully!");
   return "Success! Tables created.";
 }
 
-/**
- * Internal Database Initializer: Creates & formats tables automatically
- */
 function setupDatabaseSheets(ss) {
   var spreadsheet = ss || SpreadsheetApp.getActiveSpreadsheet();
 
-  // 1. Ensure "Bookings" sheet exists with styled Emerald header
+  // 1. "Bookings" Table
   var bookingsSheet = spreadsheet.getSheetByName("Bookings");
   if (!bookingsSheet) {
     bookingsSheet = spreadsheet.insertSheet("Bookings");
@@ -75,11 +59,12 @@ function setupDatabaseSheets(ss) {
       "4-Digit Start OTP",
       "Doorstep Delivery",
       "Delivery Address",
-      "Pickup Hub"
+      "Pickup Hub",
+      "DL Photo Status",
+      "Host Name"
     ]);
 
-    // Emerald Green Header (#059669)
-    var headerRange = bookingsSheet.getRange(1, 1, 1, 20);
+    var headerRange = bookingsSheet.getRange(1, 1, 1, 22);
     headerRange.setBackground("#059669");
     headerRange.setFontColor("#FFFFFF");
     headerRange.setFontWeight("bold");
@@ -88,7 +73,7 @@ function setupDatabaseSheets(ss) {
     bookingsSheet.setFrozenRows(1);
   }
 
-  // 2. Ensure "Vehicles" sheet exists with styled Slate Dark header
+  // 2. "Vehicles" Table
   var vehiclesSheet = spreadsheet.getSheetByName("Vehicles");
   if (!vehiclesSheet) {
     vehiclesSheet = spreadsheet.insertSheet("Vehicles");
@@ -109,10 +94,9 @@ function setupDatabaseSheets(ss) {
       "Host Name",
       "Host ID",
       "Approval Status",
-      "Image URL"
+      "Image Reference"
     ]);
 
-    // Slate Dark Header (#0F172A)
     var vHeaderRange = vehiclesSheet.getRange(1, 1, 1, 17);
     vHeaderRange.setBackground("#0F172A");
     vHeaderRange.setFontColor("#FFFFFF");
@@ -122,12 +106,36 @@ function setupDatabaseSheets(ss) {
     vehiclesSheet.setFrozenRows(1);
   }
 
-  return { bookingsSheet: bookingsSheet, vehiclesSheet: vehiclesSheet };
+  // 3. "Users" Table
+  var usersSheet = spreadsheet.getSheetByName("Users");
+  if (!usersSheet) {
+    usersSheet = spreadsheet.insertSheet("Users");
+    usersSheet.appendRow([
+      "Timestamp",
+      "User ID",
+      "Full Name",
+      "Phone",
+      "Email",
+      "Role",
+      "Host Status",
+      "KYC Status",
+      "DL Number",
+      "Aadhaar Number",
+      "Created Date"
+    ]);
+
+    var uHeaderRange = usersSheet.getRange(1, 1, 1, 11);
+    uHeaderRange.setBackground("#D97706");
+    uHeaderRange.setFontColor("#FFFFFF");
+    uHeaderRange.setFontWeight("bold");
+    uHeaderRange.setHorizontalAlignment("center");
+    usersSheet.setRowHeight(1, 35);
+    usersSheet.setFrozenRows(1);
+  }
+
+  return { bookingsSheet: bookingsSheet, vehiclesSheet: vehiclesSheet, usersSheet: usersSheet };
 }
 
-/**
- * Handle POST requests from Website (Bookings, Host Vehicles, Status Updates)
- */
 function doPost(e) {
   var lock = LockService.getScriptLock();
   lock.tryLock(10000);
@@ -146,9 +154,7 @@ function doPost(e) {
     var action = data.action || "create_booking";
     var timestamp = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
 
-    // -------------------------------------------------------------------------
     // CASE 1: Add New Customer Booking
-    // -------------------------------------------------------------------------
     if (action === "create_booking") {
       sheets.bookingsSheet.appendRow([
         timestamp,
@@ -165,12 +171,14 @@ function doPost(e) {
         data.securityDeposit || 0,
         data.deliveryFee || 0,
         data.totalAmount || 0,
-        data.paymentMode === "upi_advance" ? "UPI Advance" : "Pay at Vadodara Hub",
-        data.upiUtr || "N/A (Pay at Hub)",
+        data.paymentMode === "upi_advance" ? "UPI Advance" : "Pay at Vadodara Hub / WhatsApp",
+        data.upiUtr || "N/A",
         data.otp || "",
-        data.doorstepDelivery ? "Yes (+₹199)" : "No (Hub Pickup)",
+        data.doorstepDelivery ? "Yes (+INR 199)" : "No (Hub Pickup)",
         data.deliveryAddress || data.pickupLocation || "Vadodara Hub",
-        data.pickupLocation || data.hubName || "Vadodara Railway Station"
+        data.pickupLocation || data.hubName || "Vadodara Railway Station",
+        data.dlUploaded || (data.dlPhotoUrl ? "Photo Attached" : "Pending at Hub"),
+        data.hostName || "Ved Fleet Hub"
       ]);
 
       return ContentService.createTextOutput(
@@ -183,9 +191,32 @@ function doPost(e) {
       ).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // -------------------------------------------------------------------------
-    // CASE 2: Add New Host Vehicle
-    // -------------------------------------------------------------------------
+    // CASE 2: Register New User / Host
+    if (action === "register_user") {
+      sheets.usersSheet.appendRow([
+        timestamp,
+        data.id || ("user-" + new Date().getTime()),
+        data.name || "",
+        data.phone || "",
+        data.email || "",
+        data.role || "renter",
+        data.hostStatus || (data.role === "host" ? "pending_approval" : "approved"),
+        data.kycStatus || "unverified",
+        data.dlNumber || "",
+        data.aadhaarNumber || "",
+        data.createdAt || timestamp
+      ]);
+
+      return ContentService.createTextOutput(
+        JSON.stringify({
+          success: true,
+          message: "User registered in Google Sheet",
+          userId: data.id
+        })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // CASE 3: Add New Host Vehicle
     if (action === "submit_vehicle") {
       sheets.vehiclesSheet.appendRow([
         timestamp,
@@ -204,22 +235,19 @@ function doPost(e) {
         data.hostName || "Host Partner",
         data.hostId || "",
         data.approvalStatus || "pending_approval",
-        (data.images && data.images[0]) || ""
+        (data.images && data.images[0]) ? "Photo Uploaded" : ""
       ]);
 
       return ContentService.createTextOutput(
         JSON.stringify({
           success: true,
           message: "Vehicle added to Google Sheet successfully",
-          vehicleId: data.id,
-          timestamp: timestamp
+          vehicleId: data.id
         })
       ).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // -------------------------------------------------------------------------
-    // CASE 3: Update Booking Status (e.g. UTR Verified / In-Trip)
-    // -------------------------------------------------------------------------
+    // CASE 4: Update Booking Status
     if (action === "update_booking_status") {
       var rows = sheets.bookingsSheet.getDataRange().getValues();
       var updated = false;
@@ -232,16 +260,11 @@ function doPost(e) {
       }
 
       return ContentService.createTextOutput(
-        JSON.stringify({
-          success: updated,
-          message: updated ? "Booking status updated" : "Booking not found"
-        })
+        JSON.stringify({ success: updated, message: updated ? "Booking status updated" : "Booking not found" })
       ).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // -------------------------------------------------------------------------
-    // CASE 4: Admin Approve Vehicle
-    // -------------------------------------------------------------------------
+    // CASE 5: Approve Vehicle
     if (action === "approve_vehicle") {
       var vRows = sheets.vehiclesSheet.getDataRange().getValues();
       var vUpdated = false;
@@ -254,10 +277,58 @@ function doPost(e) {
       }
 
       return ContentService.createTextOutput(
-        JSON.stringify({
-          success: vUpdated,
-          message: vUpdated ? "Vehicle status updated" : "Vehicle not found"
-        })
+        JSON.stringify({ success: vUpdated, message: vUpdated ? "Vehicle approved" : "Vehicle not found" })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // CASE 6: Reject Vehicle
+    if (action === "reject_vehicle") {
+      var rRows = sheets.vehiclesSheet.getDataRange().getValues();
+      var rUpdated = false;
+      for (var k = 1; k < rRows.length; k++) {
+        if (rRows[k][1] === data.vehicleId || rRows[k][5] === data.plate) {
+          sheets.vehiclesSheet.getRange(k + 1, 16).setValue("rejected");
+          rUpdated = true;
+          break;
+        }
+      }
+
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: rUpdated, message: rUpdated ? "Vehicle rejected" : "Vehicle not found" })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // CASE 7: Approve Host Account
+    if (action === "approve_host") {
+      var uRows = sheets.usersSheet.getDataRange().getValues();
+      var uUpdated = false;
+      for (var u = 1; u < uRows.length; u++) {
+        if (uRows[u][1] === data.userId || uRows[u][3] === data.phone || uRows[u][4] === data.email) {
+          sheets.usersSheet.getRange(u + 1, 7).setValue("approved");
+          uUpdated = true;
+          break;
+        }
+      }
+
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: uUpdated, message: uUpdated ? "Host approved" : "Host not found" })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // CASE 8: Reject Host Account
+    if (action === "reject_host") {
+      var uhRows = sheets.usersSheet.getDataRange().getValues();
+      var uhUpdated = false;
+      for (var uh = 1; uh < uhRows.length; uh++) {
+        if (uhRows[uh][1] === data.userId || uhRows[uh][3] === data.phone || uhRows[uh][4] === data.email) {
+          sheets.usersSheet.getRange(uh + 1, 7).setValue("rejected");
+          uhUpdated = true;
+          break;
+        }
+      }
+
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: uhUpdated, message: uhUpdated ? "Host rejected" : "Host not found" })
       ).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -274,9 +345,6 @@ function doPost(e) {
   }
 }
 
-/**
- * Handle GET requests (Reads live fleet and bookings if needed)
- */
 function doGet(e) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -325,7 +393,26 @@ function doGet(e) {
           totalAmount: Number(bRow[13]),
           paymentMode: String(bRow[14]),
           upiUtr: String(bRow[15]),
-          otp: String(bRow[16])
+          otp: String(bRow[16]),
+          pickupHub: String(bRow[19])
+        });
+      }
+    }
+
+    // Read Users
+    var uRows = sheets.usersSheet.getDataRange().getValues();
+    var usersList = [];
+    for (var u = 1; u < uRows.length; u++) {
+      var uRow = uRows[u];
+      if (uRow[1]) {
+        usersList.push({
+          id: String(uRow[1]),
+          name: String(uRow[2]),
+          phone: String(uRow[3]),
+          email: String(uRow[4]),
+          role: String(uRow[5]),
+          hostStatus: String(uRow[6]),
+          kycStatus: String(uRow[7])
         });
       }
     }
@@ -335,7 +422,8 @@ function doGet(e) {
         success: true,
         source: "Ved Travels Database",
         vehicles: vehiclesList,
-        bookings: bookingsList
+        bookings: bookingsList,
+        users: usersList
       })
     ).setMimeType(ContentService.MimeType.JSON);
 
