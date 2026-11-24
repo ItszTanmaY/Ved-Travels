@@ -15,6 +15,7 @@ import {
   Truck,
   RotateCcw,
   Compass,
+  Lock,
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { FloatingSearchWidget } from "@/components/FloatingSearchWidget";
@@ -48,6 +49,7 @@ export default function Home() {
     openAuthModal,
     openHostDashboard,
     currentUser,
+    isVehicleCurrentlyBooked,
   } = useRental();
 
   // Filter vehicles (strictly only approved vehicles on public fleet)
@@ -282,18 +284,29 @@ export default function Home() {
                 {/* Massive Hero Card (Spans 8 cols) with smooth bottom dark fade */}
                 {(() => {
                   const hero = filteredVehicles[0];
+                  const isHeroBooked = isVehicleCurrentlyBooked(hero.id);
                   const heroPricing = calculateTariff(hero, selectedDuration, doorstepDelivery);
                   const isHeroCar = hero.category === "car" || hero.minHours >= 6;
                   const showHeroMinBadge = isHeroCar && selectedDuration.hours < 6;
                   return (
                     <div
-                      onClick={() => openBookingModal(hero)}
-                      className="md:col-span-8 group cursor-pointer relative rounded-3xl overflow-hidden min-h-[460px] sm:min-h-[500px] md:h-[540px] bg-[#161616] border border-white/10 hover:border-[#FF6B00]/70 transition-all shadow-xl flex flex-col justify-between p-5 sm:p-7 md:p-8"
+                      onClick={() => {
+                        if (!isHeroBooked && hero.available) openBookingModal(hero);
+                      }}
+                      className={cn(
+                        "md:col-span-8 group relative rounded-3xl overflow-hidden min-h-[460px] sm:min-h-[500px] md:h-[540px] bg-[#161616] border transition-all shadow-xl flex flex-col justify-between p-5 sm:p-7 md:p-8",
+                        isHeroBooked
+                          ? "border-red-500/40 opacity-75 cursor-not-allowed"
+                          : "border-white/10 hover:border-[#FF6B00]/70 cursor-pointer"
+                      )}
                     >
                       <img
                         src={hero.images[0]}
                         alt={hero.name}
-                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                        className={cn(
+                          "absolute inset-0 w-full h-full object-cover transition-transform duration-1000",
+                          !isHeroBooked && "group-hover:scale-105"
+                        )}
                       />
                       {/* Smooth Fade from Down into Card Body */}
                       <div className="absolute inset-0 bg-gradient-to-t from-[#161616] via-black/60 to-black/25" />
@@ -306,15 +319,24 @@ export default function Home() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {showHeroMinBadge && (
-                            <span className="text-[10px] font-bold uppercase text-black bg-amber-400 px-2.5 py-1 rounded-full shadow-sm">
-                              Min 6 Hrs
-                            </span>
+                          {isHeroBooked ? (
+                            <div className="inline-flex items-center gap-1 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-black uppercase shadow-lg animate-pulse border border-red-400">
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>BOOKED</span>
+                            </div>
+                          ) : (
+                            <>
+                              {showHeroMinBadge && (
+                                <span className="text-[10px] font-bold uppercase text-black bg-amber-400 px-2.5 py-1 rounded-full shadow-sm">
+                                  Min 6 Hrs
+                                </span>
+                              )}
+                              <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white border border-white/10 flex items-center gap-1.5 shadow-sm">
+                                <Star className="w-3.5 h-3.5 text-[#FF6B00] fill-[#FF6B00]" />
+                                <span>{hero.rating} ({hero.tripsCount} trips)</span>
+                              </div>
+                            </>
                           )}
-                          <div className="bg-black/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white border border-white/10 flex items-center gap-1.5 shadow-sm">
-                            <Star className="w-3.5 h-3.5 text-[#FF6B00] fill-[#FF6B00]" />
-                            <span>{hero.rating} ({hero.tripsCount} trips)</span>
-                          </div>
                         </div>
                       </div>
 
@@ -358,10 +380,17 @@ export default function Home() {
                           </div>
 
                           <div className="shrink-0">
-                            <span className="h-10 px-5 rounded-xl bg-[#FF6B00] hover:bg-[#E56000] text-white font-bold text-xs uppercase tracking-wider inline-flex items-center gap-1.5 shadow-lg shadow-[#FF6B00]/30 transition-transform active:scale-95">
-                              <span>Book Now</span>
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </span>
+                            {isHeroBooked ? (
+                              <span className="h-10 px-5 rounded-xl bg-red-950/80 border border-red-500/40 text-red-300 font-bold text-xs uppercase tracking-wider inline-flex items-center gap-1.5 opacity-90 pointer-events-none cursor-not-allowed">
+                                <Lock className="w-3.5 h-3.5" />
+                                <span>Currently Booked</span>
+                              </span>
+                            ) : (
+                              <span className="h-10 px-5 rounded-xl bg-[#FF6B00] hover:bg-[#E56000] text-white font-bold text-xs uppercase tracking-wider inline-flex items-center gap-1.5 shadow-lg shadow-[#FF6B00]/30 transition-transform active:scale-95 cursor-pointer">
+                                <span>Book Now</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -372,19 +401,30 @@ export default function Home() {
                 {/* Stacked Cards (4 cols) */}
                 <div className="md:col-span-4 flex flex-col gap-6">
                   {filteredVehicles.slice(1, 3).map((vehicle) => {
+                    const isCardBooked = isVehicleCurrentlyBooked(vehicle.id);
                     const pricing = calculateTariff(vehicle, selectedDuration, doorstepDelivery);
                     const isCar = vehicle.category === "car" || vehicle.minHours >= 6;
                     const showMinBadge = isCar && selectedDuration.hours < 6;
                     return (
                       <div
                         key={vehicle.id}
-                        onClick={() => openBookingModal(vehicle)}
-                        className="group cursor-pointer relative rounded-3xl overflow-hidden min-h-[220px] sm:min-h-[240px] md:flex-1 bg-[#161616] border border-white/10 hover:border-[#FF6B00]/70 transition-all shadow-xl flex flex-col justify-between p-4 sm:p-5"
+                        onClick={() => {
+                          if (!isCardBooked && vehicle.available) openBookingModal(vehicle);
+                        }}
+                        className={cn(
+                          "group relative rounded-3xl overflow-hidden min-h-[220px] sm:min-h-[240px] md:flex-1 bg-[#161616] border transition-all shadow-xl flex flex-col justify-between p-4 sm:p-5",
+                          isCardBooked
+                            ? "border-red-500/40 opacity-75 cursor-not-allowed"
+                            : "border-white/10 hover:border-[#FF6B00]/70 cursor-pointer"
+                        )}
                       >
                         <img
                           src={vehicle.images[0]}
                           alt={vehicle.name}
-                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                          className={cn(
+                            "absolute inset-0 w-full h-full object-cover transition-transform duration-1000",
+                            !isCardBooked && "group-hover:scale-105"
+                          )}
                         />
                         {/* Smooth Fade from Down */}
                         <div className="absolute inset-0 bg-gradient-to-t from-[#161616] via-black/50 to-black/20" />
@@ -394,15 +434,23 @@ export default function Home() {
                             {vehicle.plate}
                           </span>
                           <div className="flex items-center gap-1.5">
-                            {showMinBadge && (
-                              <span className="text-[9px] font-bold text-black bg-amber-400 px-2 py-0.5 rounded-full shadow-sm">
-                                Min 6 Hrs
+                            {isCardBooked ? (
+                              <span className="text-[9px] font-black uppercase text-white bg-red-600 px-2.5 py-0.5 rounded-full shadow-sm animate-pulse border border-red-400">
+                                BOOKED
                               </span>
+                            ) : (
+                              <>
+                                {showMinBadge && (
+                                  <span className="text-[9px] font-bold text-black bg-amber-400 px-2 py-0.5 rounded-full shadow-sm">
+                                    Min 6 Hrs
+                                  </span>
+                                )}
+                                <span className="text-[10px] bg-black/80 text-white font-bold px-2 py-0.5 rounded-full border border-white/10 flex items-center gap-1 shadow-sm">
+                                  <Star className="w-3 h-3 text-[#FF6B00] fill-[#FF6B00]" />
+                                  <span>{vehicle.rating}</span>
+                                </span>
+                              </>
                             )}
-                            <span className="text-[10px] bg-black/80 text-white font-bold px-2 py-0.5 rounded-full border border-white/10 flex items-center gap-1 shadow-sm">
-                              <Star className="w-3 h-3 text-[#FF6B00] fill-[#FF6B00]" />
-                              <span>{vehicle.rating}</span>
-                            </span>
                           </div>
                         </div>
 
@@ -428,6 +476,11 @@ export default function Home() {
                               ({pricing.rateText})
                             </span>
                           </div>
+                          {isCardBooked && (
+                            <span className="text-[10px] font-bold text-red-400 mt-1 block">
+                              Currently Booked
+                            </span>
+                          )}
                         </div>
                       </div>
                     );

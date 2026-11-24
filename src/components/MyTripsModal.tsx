@@ -16,6 +16,7 @@ import {
   RotateCcw,
   Copy,
   MessageCircle,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -205,6 +206,12 @@ export default function MyTripsModal() {
 
                     {/* Status Badge */}
                     <div className="flex flex-wrap gap-1.5 items-center">
+                      {(booking.status === "pending_payment" || booking.status === "pending_offline_verification") && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                          <span>Pending Payment Verification</span>
+                        </span>
+                      )}
                       {booking.status === "confirmed" && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -214,19 +221,18 @@ export default function MyTripsModal() {
                       {(booking.status === "confirmed_whatsapp" || booking.status === "confirmed_pay_at_hub") && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>WhatsApp Booking • Pay on Pickup (UPI/Cash)</span>
-                        </span>
-                      )}
-                      {booking.status === "pending_offline_verification" && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300">
-                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                          <span>Pending UPI Verification</span>
+                          <span>Confirmed • Ready for Handover</span>
                         </span>
                       )}
                       {booking.status === "in_trip" && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-800 border border-purple-200">
                           <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
                           <span>In Trip (Keys Released)</span>
+                        </span>
+                      )}
+                      {booking.status === "completed" && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                          <span>Trip Completed</span>
                         </span>
                       )}
                       {booking.status === "cancelled" && (
@@ -237,41 +243,70 @@ export default function MyTripsModal() {
                     </div>
                   </div>
 
-                  {/* Highlight: 4-DIGIT HANDOVER OTP (shown for all active reservations) */}
-                  {(booking.status === "confirmed" ||
-                    booking.status === "confirmed_whatsapp" ||
-                    booking.status === "confirmed_pay_at_hub" ||
-                    booking.status === "pending_offline_verification") && (
-                    <div className="bg-[#1A1A1A] text-white rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
-                      <div>
-                        <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#059669]">
-                          <KeyRound className="w-4 h-4 text-[#059669]" />
-                          <span>Handover 4-Digit Security OTP</span>
+                  {/* Highlight: Gated 4-DIGIT HANDOVER OTP (Unlocked only upon Admin confirmation) */}
+                  {(booking.status === "pending_payment" || booking.status === "pending_offline_verification") && (
+                    <div className="bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                          <Lock className="w-5 h-5 text-amber-700" />
                         </div>
-                        <p className="text-xs text-white/70 mt-0.5">
-                          Present this 4-digit OTP at {booking.pickupLocation || "your selected Vadodara hub"} to release vehicle keys:
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <div className="bg-white text-black px-4 py-2 rounded-xl font-mono font-black text-2xl tracking-widest shadow-md">
-                          {booking.otp}
+                        <div>
+                          <div className="text-xs font-bold text-amber-950 uppercase tracking-wider">
+                            Awaiting Payment Verification from Ved Travels
+                          </div>
+                          <p className="text-xs text-amber-800 mt-0.5">
+                            Your 4-Digit Start OTP will unlock once payment is verified.
+                          </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(booking.otp);
-                            toast.success("4-Digit OTP copied to clipboard!");
-                          }}
-                          className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer text-xs flex items-center gap-1 font-bold border border-white/10 active:scale-95"
-                          title="Copy OTP"
-                        >
-                          <Copy className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Copy OTP</span>
-                        </button>
                       </div>
+                      <a
+                        href={`https://wa.me/919546883777?text=${encodeURIComponent(
+                          `Hi Shantanu, I have submitted booking ${booking.bookingCode} for ${booking.vehicleName}. Please verify payment to unlock my 4-digit start OTP.`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        Speed up via WhatsApp
+                      </a>
                     </div>
                   )}
+
+                  {/* UNLOCKED 4-DIGIT OTP (Shown when confirmed) */}
+                  {(booking.status === "confirmed" ||
+                    booking.status === "confirmed_whatsapp" ||
+                    booking.status === "confirmed_pay_at_hub") &&
+                    booking.otp && (
+                      <div className="bg-[#1A1A1A] text-white rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+                        <div>
+                          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-400">
+                            <KeyRound className="w-4 h-4 text-emerald-400" />
+                            <span>Handover 4-Digit Security OTP (Unlocked)</span>
+                          </div>
+                          <p className="text-xs text-white/70 mt-0.5">
+                            Present this 4-digit OTP at {booking.pickupLocation || "your selected Vadodara hub"} to collect vehicle keys:
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <div className="bg-white text-black px-4 py-2 rounded-xl font-mono font-black text-2xl tracking-widest shadow-md">
+                            {booking.otp}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(booking.otp);
+                              toast.success("4-Digit OTP copied to clipboard!");
+                            }}
+                            className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer text-xs flex items-center gap-1 font-bold border border-white/10 active:scale-95"
+                            title="Copy OTP"
+                          >
+                            <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Copy OTP</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                   {/* Trip details grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-black/70">
@@ -307,6 +342,7 @@ export default function MyTripsModal() {
 
                   {/* Actions row: WhatsApp Button + Call + Cancel */}
                   {(booking.status === "confirmed" ||
+                    booking.status === "pending_payment" ||
                     booking.status === "confirmed_pay_at_hub" ||
                     booking.status === "pending_offline_verification") && (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 border-t border-black/5">
@@ -314,29 +350,28 @@ export default function MyTripsModal() {
                         {/* WhatsApp Button */}
                         <a
                           href={`https://wa.me/919546883777?text=${encodeURIComponent(
-                            `*VED TRAVELS VADODARA - RESERVATION & 4-DIGIT OTP*\n` +
+                            `*VED TRAVELS VADODARA - RESERVATION DETAILS*\n` +
                               `----------------------------------------\n` +
                               `• *Booking Code:* ${booking.bookingCode}\n` +
                               `• *Vehicle:* ${booking.vehicleName} (${booking.vehiclePlate})\n` +
                               `• *Duration / Tariff Slab:* ${booking.durationLabel}\n` +
                               `• *Start Date:* ${booking.startDate}\n` +
-                              `• *Pickup / Handover Location:* ${booking.pickupLocation || booking.hubName}\n` +
+                              `• *Pickup Location:* ${booking.pickupLocation || booking.hubName}\n` +
                               `• *Doorstep Delivery:* ${booking.doorstepDelivery ? `Yes (+₹199) to ${booking.deliveryAddress}` : `No (Hub Pickup at ${booking.pickupLocation || booking.hubName})`}\n` +
-                              `• *Payment Mode:* ${booking.paymentMode === "upi_advance" ? `UPI Advance (UTR: ${booking.upiUtr || "Pending"})` : `Pay at Hub (Cash/UPI)`}\n` +
                               `• *Total Estimated:* ${formatINR(booking.totalAmount)}\n` +
                               `----------------------------------------\n` +
-                              `🔑 *4-DIGIT START TRIP OTP:* ${booking.otp}\n` +
+                              `${booking.otp ? `🔑 *4-DIGIT START TRIP OTP:* ${booking.otp}` : `🔒 *STATUS:* Awaiting Payment Verification & OTP Generation`}\n` +
                               `----------------------------------------\n` +
                               `• *Renter:* ${booking.renterName} (${booking.renterPhone})\n` +
                               `• *Support Contact:* Shantanu Shekhar (+91 95468 83777)\n` +
-                              `Please keep the machine sanitized & ready for handover.`
+                              `Please confirm handover details.`
                           )}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-4 py-2 rounded-full bg-[#059669] hover:bg-[#047857] text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md active:scale-95 cursor-pointer"
                         >
                           <MessageCircle className="w-4 h-4 text-emerald-100" />
-                          <span>Send Booking & OTP to WhatsApp</span>
+                          <span>{booking.otp ? "Send Booking & OTP to WhatsApp" : "Chat on WhatsApp"}</span>
                         </a>
 
                         <a

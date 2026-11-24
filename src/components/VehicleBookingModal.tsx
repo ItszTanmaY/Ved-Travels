@@ -47,6 +47,7 @@ export default function VehicleBookingModal() {
     calculateTariff,
     createBooking,
     isVehicleSlotLocked,
+    isVehicleCurrentlyBooked,
     currentUser,
     openAuthModal,
     openMyTripsModal,
@@ -102,7 +103,8 @@ export default function VehicleBookingModal() {
     ? DURATION_PRESETS.filter((p) => p.hours >= 6)
     : DURATION_PRESETS;
 
-  const isSlotLocked = isVehicleSlotLocked(selectedVehicle.id, selectedDuration);
+  const isCurrentlyBooked = isVehicleCurrentlyBooked(selectedVehicle.id);
+  const isSlotLocked = isCurrentlyBooked || isVehicleSlotLocked(selectedVehicle.id, selectedDuration);
   const pricing = calculateTariff(selectedVehicle, selectedDuration, doorstepDelivery);
 
   const handleDlFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -135,16 +137,16 @@ export default function VehicleBookingModal() {
   };
 
   const handleConfirmBooking = () => {
-    if (isSlotLocked) {
-      toast.error("Time slot already reserved!", {
-        description: "Please select another rental duration or pick another vehicle from the fleet.",
+    if (isCurrentlyBooked || isSlotLocked) {
+      toast.error("Vehicle is Currently Booked!", {
+        description: "This vehicle has an active reservation. Please pick another vehicle from the fleet.",
       });
       return;
     }
 
     if (!currentUser) {
       toast.info("Please sign in or create an account to proceed", {
-        description: "Opening registration/login modal...",
+        description: "Opening sign-in modal...",
       });
       openAuthModal("renter");
       return;
@@ -176,12 +178,12 @@ export default function VehicleBookingModal() {
 
       setConfirmedBooking(booking);
 
-      toast.success(`RESERVATION CONFIRMED: ${selectedVehicle.name}`, {
-        description: `4-Digit OTP: ${booking.otp} • Synced to Google Sheets!`,
+      toast.info("Reservation Submitted — Payment Verification Pending", {
+        description: `Booking ID: ${booking.bookingCode} • 4-Digit OTP unlocks upon admin verification.`,
         duration: 8000,
       });
 
-      // Automatically launch WhatsApp with booking details & 4-digit OTP
+      // Launch WhatsApp with booking details
       const waUrl = generateWhatsAppUrl(booking);
       if (typeof window !== "undefined") {
         window.open(waUrl, "_blank");
@@ -193,10 +195,10 @@ export default function VehicleBookingModal() {
     }
   };
 
-  // WhatsApp pre-formatted message for confirmed booking with client details & exact slab
+  // WhatsApp pre-formatted message for booking enquiry & payment verification
   const generateWhatsAppUrl = (b: Booking) => {
     const text = encodeURIComponent(
-      `*VED TRAVELS VADODARA - BOOKING CONFIRMATION*\n` +
+      `*VED TRAVELS VADODARA - NEW RESERVATION REQUEST*\n` +
         `----------------------------------------\n` +
         `• *Booking Code:* ${b.bookingCode}\n` +
         `• *Vehicle:* ${b.vehicleName} (${b.vehiclePlate})\n` +
@@ -205,15 +207,14 @@ export default function VehicleBookingModal() {
         `• *Pickup / Handover Location:* ${b.pickupLocation || b.hubName}\n` +
         `• *Start Date:* ${b.startDate}\n` +
         `• *Doorstep Delivery:* ${b.doorstepDelivery ? `Yes (+₹199) to ${b.deliveryAddress}` : `No (Hub Pickup at ${b.pickupLocation})`}\n` +
-        `• *Safety Verification:* DL / Govt ID Photo Attached\n` +
-        `• *Payment Mode:* Direct via WhatsApp / On Pickup (Cash or UPI)\n` +
+        `• *Safety Verification:* DL / Govt ID Photo Uploaded\n` +
         `• *Total Estimated Tariff:* ${formatINR(b.totalAmount)}\n` +
         `----------------------------------------\n` +
-        `🔑 *4-DIGIT START TRIP OTP:* ${b.otp}\n` +
+        `🔒 *START TRIP OTP:* Awaiting Payment Verification (Unlocks upon Admin Confirmation)\n` +
         `----------------------------------------\n` +
         `• *Customer:* ${b.renterName} (${b.renterPhone})\n` +
         `• *Support Contact:* ${VED_BUSINESS_CONFIG.owner} (${VED_BUSINESS_CONFIG.phone})\n` +
-        `Please confirm machine availability & handover details.`
+        `Please verify payment and confirm vehicle handover.`
     );
     return `https://wa.me/${VED_BUSINESS_CONFIG.whatsappNumber}?text=${text}`;
   };
@@ -258,38 +259,40 @@ export default function VehicleBookingModal() {
         {/* Modal Body */}
         {confirmedBooking ? (
           /* ============================================================== */
-          /* VIEW 1: BOOKING CONFIRMATION & 4-DIGIT START OTP */
+          /* VIEW 1: BOOKING SUBMISSION & PAYMENT VERIFICATION PENDING */
           /* ============================================================== */
           <div className="p-6 space-y-5 text-center overflow-y-auto flex-1 overscroll-contain">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 text-[#059669] flex items-center justify-center mx-auto shadow-inner">
-              <CheckCircle2 className="w-9 h-9" />
+            <div className="w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto shadow-inner">
+              <Clock className="w-9 h-9" />
             </div>
 
             <div className="space-y-1">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#059669]">
-                RESERVATION CONFIRMED
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-3 py-1 rounded-full inline-block">
+                PAYMENT VERIFICATION PENDING
               </span>
-              <h4 className="text-xl sm:text-2xl font-extrabold text-black tracking-tight">
-                Your Machine is Locked!
+              <h4 className="text-xl sm:text-2xl font-extrabold text-black tracking-tight pt-1">
+                Reservation Submitted & Vehicle Locked!
               </h4>
               <p className="text-xs text-black/60 max-w-md mx-auto">
                 Booking ID: <strong className="font-mono text-slate-800">{confirmedBooking.bookingCode}</strong> • {confirmedBooking.durationLabel}
               </p>
             </div>
 
-            {/* HIGHLIGHT: 4-Digit Handover OTP Card */}
-            <div className="bg-gradient-to-br from-emerald-50 to-slate-50 border-2 border-[#059669] rounded-2xl p-5 max-w-md mx-auto shadow-md">
-              <div className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#059669] mb-1">
-                <KeyRound className="w-4 h-4" />
-                <span>Your 4-Digit Start Trip Handover OTP</span>
+            {/* HIGHLIGHT: Awaiting Verification & Locked OTP Notice */}
+            <div className="bg-gradient-to-br from-amber-50 to-slate-50 border-2 border-amber-300 rounded-2xl p-5 max-w-md mx-auto shadow-md text-center space-y-2.5">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider text-amber-800">
+                <Lock className="w-4 h-4 text-amber-600" />
+                <span>4-Digit Handover OTP Locked</span>
               </div>
 
-              <div className="font-mono text-4xl sm:text-5xl font-black text-slate-900 tracking-[0.25em] my-2 select-all">
-                {confirmedBooking.otp}
+              <div className="p-3.5 bg-white rounded-xl border border-amber-200 shadow-2xs">
+                <p className="text-xs font-bold text-slate-900 leading-relaxed">
+                  Awaiting Payment Verification from Ved Travels — Your 4-Digit Start OTP will unlock once payment is verified.
+                </p>
               </div>
 
               <p className="text-[11px] text-slate-600 leading-normal">
-                Show this 4-digit OTP to the Ved Travels executive at <strong className="text-slate-900">{confirmedBooking.pickupLocation || confirmedBooking.hubName}</strong> to collect your keys.
+                Our Vadodara Hub Desk will review and confirm your reservation. As soon as verified, your 4-digit handover OTP will unlock in your <strong className="text-slate-900">My Trips</strong> console and be ready for key collection at <strong className="text-slate-900">{confirmedBooking.pickupLocation || confirmedBooking.hubName}</strong>.
               </p>
             </div>
 
@@ -309,9 +312,9 @@ export default function VehicleBookingModal() {
             {/* WhatsApp & Handover Payment Status pill */}
             <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl max-w-md mx-auto text-left text-xs space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-emerald-900">Payment & Handover:</span>
+                <span className="font-bold text-emerald-900">Payment & Verification:</span>
                 <span className="font-bold px-2 py-0.5 rounded-full text-[10px] uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">
-                  Direct via WhatsApp
+                  Connect on WhatsApp
                 </span>
               </div>
               <p className="text-[11px] text-emerald-700">
@@ -716,12 +719,14 @@ export default function VehicleBookingModal() {
                 {isSubmitting ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Confirming & Syncing to Google Sheets...</span>
+                    <span>Submitting & Syncing to Google Sheets...</span>
                   </>
+                ) : isSlotLocked ? (
+                  <span>Currently Booked — Please Select Another Slot</span>
                 ) : (
                   <>
                     <MessageCircle className="w-4 h-4 fill-white" />
-                    <span>Book on WhatsApp & Get 4-Digit OTP ({formatINR(pricing.total)})</span>
+                    <span>Submit Booking & Verify Payment ({formatINR(pricing.total)})</span>
                   </>
                 )}
               </button>
@@ -735,7 +740,7 @@ export default function VehicleBookingModal() {
               </a>
 
               <p className="text-[10px] text-center text-slate-400 mt-1">
-                Generates instant 4-Digit Handover OTP • Synced to Google Sheets • 24×7 Available
+                Real-Time Slot Lock • 4-Digit OTP Unlocked Upon Admin Payment Verification • 24×7 Available
               </p>
             </div>
           </div>

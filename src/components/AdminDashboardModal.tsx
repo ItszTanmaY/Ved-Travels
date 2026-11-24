@@ -41,6 +41,7 @@ export default function AdminDashboardModal() {
     rejectHostAccount,
     approveVehicle,
     rejectVehicle,
+    verifyPaymentAndGenerateOtp,
     markBookingTripStatus,
     clearHostPayout,
     verifyHandoverOtp,
@@ -64,7 +65,15 @@ export default function AdminDashboardModal() {
 
   // Trips filtering
   const filteredBookings = bookings.filter((b) => {
-    if (filterTripStatus !== "all" && b.status !== filterTripStatus) return false;
+    if (filterTripStatus !== "all") {
+      if (filterTripStatus === "pending_payment") {
+        if (b.status !== "pending_payment" && b.status !== "pending_offline_verification") return false;
+      } else if (filterTripStatus === "confirmed") {
+        if (b.status !== "confirmed" && b.status !== "confirmed_whatsapp" && b.status !== "confirmed_pay_at_hub") return false;
+      } else if (b.status !== filterTripStatus) {
+        return false;
+      }
+    }
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -371,7 +380,7 @@ export default function AdminDashboardModal() {
               {/* Filter and Search Bar */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
                 <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto">
-                  {["all", "confirmed_whatsapp", "confirmed_pay_at_hub", "confirmed", "in_trip", "completed"].map(
+                  {["all", "pending_payment", "confirmed", "in_trip", "completed"].map(
                     (st) => (
                       <button
                         key={st}
@@ -385,9 +394,11 @@ export default function AdminDashboardModal() {
                       >
                         {st === "all"
                           ? "All Trips"
+                          : st === "pending_payment"
+                          ? "Pending Payment"
                           : st === "in_trip"
                           ? "In-Trip"
-                          : st.replace("confirmed_", "").toUpperCase()}
+                          : st.toUpperCase()}
                       </button>
                     )
                   )}
@@ -433,7 +444,9 @@ export default function AdminDashboardModal() {
                         <div className="flex items-center gap-2">
                           <span
                             className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ${
-                              b.status === "in_trip"
+                              b.status === "pending_payment" || b.status === "pending_offline_verification"
+                                ? "bg-amber-100 text-amber-900 border border-amber-300 animate-pulse font-extrabold"
+                                : b.status === "in_trip"
                                 ? "bg-purple-100 text-purple-800 border border-purple-300"
                                 : b.status === "completed"
                                 ? "bg-slate-100 text-slate-700"
@@ -442,7 +455,11 @@ export default function AdminDashboardModal() {
                                 : "bg-emerald-100 text-emerald-800 border border-emerald-300"
                             }`}
                           >
-                            {b.status.replace("_", " ").toUpperCase()}
+                            {b.status === "pending_payment" || b.status === "pending_offline_verification"
+                              ? "Awaiting Payment"
+                              : b.status === "in_trip"
+                              ? "In-Trip"
+                              : b.status.replace("confirmed_", "").toUpperCase()}
                           </span>
                         </div>
                       </div>
@@ -470,14 +487,24 @@ export default function AdminDashboardModal() {
                         </div>
 
                         {/* 4-Digit Handover OTP Card */}
-                        <div className="bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 flex flex-col justify-between">
+                        <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
+                          b.otp ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"
+                        }`}>
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] uppercase font-bold text-emerald-800">4-Digit OTP</span>
-                            <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                            <span className={`text-[10px] uppercase font-bold ${b.otp ? "text-emerald-800" : "text-amber-800"}`}>
+                              4-Digit OTP
+                            </span>
+                            <KeyRound className={`w-3.5 h-3.5 ${b.otp ? "text-emerald-600" : "text-amber-600"}`} />
                           </div>
-                          <span className="font-mono font-black text-xl text-emerald-950 tracking-widest">
-                            {b.otp}
-                          </span>
+                          {b.otp ? (
+                            <span className="font-mono font-black text-xl text-emerald-950 tracking-widest">
+                              {b.otp}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-bold text-amber-700">
+                              Locked (Verify First)
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -504,7 +531,20 @@ export default function AdminDashboardModal() {
 
                         {/* Handover OTP Action & Trip State */}
                         <div className="flex items-center gap-2 w-full sm:w-auto">
-                          {b.status !== "in_trip" && b.status !== "completed" && b.status !== "cancelled" && (
+                          {/* 1. If Pending Payment: Verify Payment & Generate OTP Button */}
+                          {(b.status === "pending_payment" || b.status === "pending_offline_verification") && (
+                            <button
+                              type="button"
+                              onClick={() => verifyPaymentAndGenerateOtp(b.id)}
+                              className="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-sm cursor-pointer whitespace-nowrap active:scale-95"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Verify Payment & Generate OTP</span>
+                            </button>
+                          )}
+
+                          {/* 2. If Confirmed: Enter OTP to Start Trip */}
+                          {(b.status === "confirmed" || b.status === "confirmed_whatsapp" || b.status === "confirmed_pay_at_hub") && (
                             <div className="flex items-center gap-1.5">
                               <input
                                 type="text"
@@ -526,6 +566,7 @@ export default function AdminDashboardModal() {
                             </div>
                           )}
 
+                          {/* 3. If In-Trip: Mark Completed */}
                           {b.status === "in_trip" && (
                             <button
                               type="button"

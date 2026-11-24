@@ -59,6 +59,7 @@ export interface Booking {
   paymentMode: "upi_advance" | "pay_at_hub" | "whatsapp_booking";
   upiUtr?: string;
   status:
+    | "pending_payment"
     | "pending_offline_verification"
     | "confirmed_pay_at_hub"
     | "confirmed_whatsapp"

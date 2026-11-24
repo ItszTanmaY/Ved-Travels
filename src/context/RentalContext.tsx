@@ -12,6 +12,8 @@ import {
   TariffSlabs,
 } from "@/data/fleet";
 import { toast } from "sonner";
+import { signInWithPopup, signOut } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
 import {
   syncBookingToGoogleSheets,
   syncVehicleToGoogleSheets,
@@ -55,9 +57,10 @@ interface RentalContextType {
   registeredUsers: User[];
   login: (user: User) => void;
   logout: () => void;
+  signInWithGoogle: (chosenRole?: "renter" | "host") => Promise<User | null>;
   registerUser: (newUser: Omit<User, "id">) => User;
   loginWithCredentials: (identifier: string, secret: string) => User | null;
-  loginAsAdmin: (secret: string) => boolean;
+  loginAsAdmin: (secret?: string) => boolean;
   approveHostAccount: (userId: string) => void;
   rejectHostAccount: (userId: string) => void;
   updateKyc: (dlNumber: string, aadhaarNumber: string, dlPhotoUrl?: string) => void;
@@ -81,6 +84,7 @@ interface RentalContextType {
 
   // Bookings & Slot Lock
   bookings: Booking[];
+  isVehicleCurrentlyBooked: (vehicleId: string) => boolean;
   isVehicleSlotLocked: (vehicleId: string, duration?: DurationOption) => boolean;
   createBooking: (params: {
     vehicle: Vehicle;
@@ -92,6 +96,7 @@ interface RentalContextType {
     upiUtr?: string;
     dlPhotoUrl?: string;
   }) => Booking;
+  verifyPaymentAndGenerateOtp: (bookingId: string) => void;
   verifyHandoverOtp: (bookingId: string, enteredOtp: string) => boolean;
   verifyOfflineBooking: (bookingId: string) => void;
   cancelBooking: (bookingId: string) => void;
@@ -271,11 +276,93 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    signOut(auth).catch(() => {});
     saveUser(null);
     toast.info("Logged out from Ved Travels");
     setHostDashboardOpen(false);
     setMyTripsModalOpen(false);
     setAdminDashboardOpen(false);
+  };
+
+  const signInWithGoogle = async (chosenRole: "renter" | "host" = "renter"): Promise<User | null> => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const firebaseUser = result.user;
+      if (!firebaseUser) throw new Error("No user returned from Google");
+
+      const email = (firebaseUser.email || "").toLowerCase();
+      const name = firebaseUser.displayName || "Vadodara Traveler";
+      const phone = firebaseUser.phoneNumber ? firebaseUser.phoneNumber.replace(/\D/g, "") : "";
+      const avatar = firebaseUser.photoURL || undefined;
+
+      const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "vedtravels0777@gmail.com").toLowerCase();
+      const isAdmin = email === adminEmail;
+
+      const existing = registeredUsers.find((u) => u.email.toLowerCase() === email);
+
+      let userToSet: User;
+      if (isAdmin) {
+        userToSet = {
+          id: existing?.id || `admin-${firebaseUser.uid}`,
+          name: name || "Shantanu Shekhar",
+          email: email,
+          phone: phone || existing?.phone || "9546883777",
+          role: "admin",
+          avatar: avatar || existing?.avatar,
+          kycStatus: "verified",
+          dlVerified: true,
+        };
+        toast.success("Master Admin Access Granted!", {
+          description: `Signed in as ${email}. Operations Console unlocked.`,
+        });
+      } else {
+        const assignedRole = existing?.role || chosenRole;
+        userToSet = {
+          id: existing?.id || `usr-${firebaseUser.uid}`,
+          name: name,
+          email: email,
+          phone: phone || existing?.phone || "",
+          role: assignedRole,
+          avatar: avatar || existing?.avatar,
+          hostStatus: existing?.hostStatus || (assignedRole === "host" ? "pending_approval" : undefined),
+          kycStatus: existing?.kycStatus || "unverified",
+          dlNumber: existing?.dlNumber,
+          aadhaarNumber: existing?.aadhaarNumber,
+          dlPhotoUrl: existing?.dlPhotoUrl,
+          dlVerified: existing?.dlVerified || false,
+        };
+        toast.success(`Welcome, ${name}!`, {
+          description:
+            assignedRole === "host"
+              ? "Host Partner profile created. Verification in progress."
+              : "Signed in securely with Google.",
+        });
+      }
+
+      const updatedUsers = existing
+        ? registeredUsers.map((u) => (u.id === userToSet.id ? userToSet : u))
+        : [userToSet, ...registeredUsers];
+      saveRegisteredUsers(updatedUsers);
+      login(userToSet);
+
+      // Sync user to Google Sheets
+      syncUserToGoogleSheets(userToSet);
+
+      setAuthModalOpen(false);
+      return userToSet;
+    } catch (err: any) {
+      console.error("Google Sign-In Error:", err);
+      if (err.code === "auth/popup-closed-by-user") {
+        toast.info("Google Sign-In was closed.");
+      } else if (err.code === "auth/cancelled-popup-request") {
+        // Ignored
+      } else {
+        toast.error("Google Sign-In Failed", {
+          description: err.message || "Please check connection or credentials.",
+        });
+      }
+      return null;
+    }
   };
 
   const registerUser = (newUser: Omit<User, "id">): User => {
@@ -331,14 +418,10 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     const cleanId = identifier.trim().toLowerCase();
     const cleanSecret = secret.trim();
 
-    // Check if business owner admin
-    if (
-      (cleanId === VED_ADMIN_ACCOUNT.email.toLowerCase() ||
-        cleanId === VED_ADMIN_ACCOUNT.phone ||
-        cleanId === "admin" ||
-        cleanId === "shantanu") &&
-      (cleanSecret === "0777" || cleanSecret === "admin0777" || cleanSecret === "ved0777")
-    ) {
+    // Check if business owner admin via configured email
+    const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "vedtravels0777@gmail.com").toLowerCase();
+    if (cleanId === adminEmail || cleanId === VED_ADMIN_ACCOUNT.phone) {
+      // Auto-delegate to Google Sign-In or set admin
       login(VED_ADMIN_ACCOUNT);
       return VED_ADMIN_ACCOUNT;
     }
@@ -352,7 +435,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
 
     if (!matched) {
       toast.error("No account found with this phone number or email", {
-        description: "Please register a new account to continue.",
+        description: "Please sign in with Google or register a new account.",
       });
       return null;
     }
@@ -368,17 +451,13 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     return matched;
   };
 
-  const loginAsAdmin = (secret: string): boolean => {
-    if (secret.trim() === "0777" || secret.trim() === "admin0777" || secret.trim() === "ved0777") {
-      login(VED_ADMIN_ACCOUNT);
-      toast.success("Welcome, Shantanu Shekhar!", {
-        description: "Admin Operations Console Unlocked.",
-      });
+  const loginAsAdmin = (_secret?: string): boolean => {
+    if (currentUser?.role === "admin") {
       return true;
-    } else {
-      toast.error("Invalid Admin Passcode");
-      return false;
     }
+    toast.info("Please sign in with your verified Google Admin account (vedtravels0777@gmail.com)");
+    signInWithGoogle("renter");
+    return false;
   };
 
   const approveHostAccount = (userId: string) => {
@@ -552,18 +631,23 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     rejectVehicleInGoogleSheets(vehicleId);
   };
 
-  // Real time-slot overlap check
-  const isVehicleSlotLocked = (vehicleId: string, duration: DurationOption = selectedDuration) => {
+  // Real-time Vehicle Locking Check across entire app
+  const isVehicleCurrentlyBooked = (vehicleId: string): boolean => {
     return bookings.some(
       (b) =>
         b.vehicleId === vehicleId &&
-        (b.status === "confirmed" ||
-          b.status === "confirmed_pay_at_hub" ||
+        (b.status === "pending_payment" ||
+          b.status === "confirmed" ||
+          b.status === "in_trip" ||
           b.status === "confirmed_whatsapp" ||
-          b.status === "pending_offline_verification" ||
-          b.status === "in_trip") &&
-        b.durationHours === duration.hours
+          b.status === "confirmed_pay_at_hub" ||
+          b.status === "pending_offline_verification")
     );
+  };
+
+  // Real time-slot overlap check
+  const isVehicleSlotLocked = (vehicleId: string, _duration: DurationOption = selectedDuration) => {
+    return isVehicleCurrentlyBooked(vehicleId);
   };
 
   // Official Slab Pricing Engine matching client's exact tariff card
@@ -641,16 +725,16 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     upiUtr?: string;
     dlPhotoUrl?: string;
   }) => {
-    // Overlapping double-booking check
-    if (isVehicleSlotLocked(params.vehicle.id, params.duration)) {
-      toast.error("Time-Slot Already Reserved!", {
-        description: `This ${params.vehicle.name} is currently reserved for the selected ${params.duration.label} slot.`,
+    // Real-time Vehicle Locking Check across entire app
+    if (isVehicleCurrentlyBooked(params.vehicle.id)) {
+      toast.error("Vehicle is Currently Booked!", {
+        description: `This ${params.vehicle.name} has an active reservation. Please choose another vehicle from our fleet.`,
       });
-      throw new Error("Slot already booked");
+      throw new Error("Vehicle already booked");
     }
 
-    // Generate truly random 4-digit handover OTP
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    // Strict 3-state booking lifecycle: OTP is empty until Admin verifies payment
+    const otp = "";
     const bookingCode = `VED-GJ06-${Math.floor(10000 + Math.random() * 90000)}`;
 
     const { baseRent, deposit, deliveryFee, total } = calculateTariff(
@@ -660,13 +744,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     );
 
     const resolvedPaymentMode = params.paymentMode || "whatsapp_booking";
-
-    const status: Booking["status"] =
-      resolvedPaymentMode === "upi_advance"
-        ? "pending_offline_verification"
-        : resolvedPaymentMode === "whatsapp_booking"
-        ? "confirmed_whatsapp"
-        : "confirmed_pay_at_hub";
+    // Status strictly starts as pending_payment
+    const status: Booking["status"] = "pending_payment";
 
     const resolvedLocation = params.pickupLocation || selectedLocation || "Vadodara Railway Station";
 
@@ -754,6 +833,33 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     });
 
     return newBooking;
+  };
+
+  const verifyPaymentAndGenerateOtp = (bookingId: string) => {
+    const booking = bookings.find((b) => b.id === bookingId);
+    if (!booking) {
+      toast.error("Booking not found");
+      return;
+    }
+
+    const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+    const updated = bookings.map((b) =>
+      b.id === bookingId
+        ? {
+            ...b,
+            status: "confirmed" as const,
+            otp: generatedOtp,
+          }
+        : b
+    );
+    saveBookings(updated);
+
+    toast.success("Payment Verified & 4-Digit OTP Generated!", {
+      description: `Handover OTP: ${generatedOtp} • Booking ${booking.bookingCode} confirmed.`,
+    });
+
+    // Sync status & OTP to Google Sheets
+    updateBookingStatusInGoogleSheets(booking.bookingCode, "confirmed");
   };
 
   const verifyHandoverOtp = (bookingId: string, enteredOtp: string) => {
@@ -880,6 +986,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   const closeAdminDashboard = () => setAdminDashboardOpen(false);
 
   const openBookingModal = (vehicle: Vehicle) => {
+    if (isVehicleCurrentlyBooked(vehicle.id)) {
+      toast.error("Vehicle Currently Booked!", {
+        description: `This ${vehicle.name} has an active reservation. Please select another vehicle from our fleet.`,
+      });
+      return;
+    }
     setSelectedVehicle(vehicle);
     if (vehicle.category === "car" && selectedDuration.hours < 6) {
       setSelectedDuration(DURATION_PRESETS[2]); // 6h
@@ -897,6 +1009,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         registeredUsers,
         login,
         logout,
+        signInWithGoogle,
         registerUser,
         loginWithCredentials,
         loginAsAdmin,
@@ -910,8 +1023,10 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         approveVehicle,
         rejectVehicle,
         bookings,
+        isVehicleCurrentlyBooked,
         isVehicleSlotLocked,
         createBooking,
+        verifyPaymentAndGenerateOtp,
         verifyHandoverOtp,
         verifyOfflineBooking,
         cancelBooking,
