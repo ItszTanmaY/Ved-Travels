@@ -92,6 +92,7 @@ export const VED_BUSINESS_CONFIG = {
   rawPhone: "9546883777",
   whatsappNumber: process.env.NEXT_PUBLIC_VED_WHATSAPP_NUMBER || "919546883777",
   email: "vedtravels0777@gmail.com",
+  adminEmails: ["vedtravels0777@gmail.com", "aetrix8@gmail.com"],
   availabilityBadge: "24×7 Available",
   upiId: process.env.NEXT_PUBLIC_VED_UPI_ID || "9546883777@upi",
   accountName: process.env.NEXT_PUBLIC_VED_UPI_NAME || "Ved Travels Vadodara",

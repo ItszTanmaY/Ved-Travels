@@ -334,8 +334,14 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       const phone = firebaseUser.phoneNumber ? firebaseUser.phoneNumber.replace(/\D/g, "") : "";
       const avatar = firebaseUser.photoURL || undefined;
 
-      const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "vedtravels0777@gmail.com").toLowerCase();
-      const isAdmin = email === adminEmail;
+      const ADMIN_EMAILS = [
+        "vedtravels0777@gmail.com",
+        "aetrix8@gmail.com",
+        ...(process.env.NEXT_PUBLIC_ADMIN_EMAIL
+          ? process.env.NEXT_PUBLIC_ADMIN_EMAIL.toLowerCase().split(",").map((e) => e.trim())
+          : []),
+      ];
+      const isAdmin = ADMIN_EMAILS.includes(email);
 
       const existing = registeredUsers.find((u) => u.email.toLowerCase() === email);
 
@@ -343,7 +349,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       if (isAdmin) {
         userToSet = {
           id: existing?.id || `admin-${firebaseUser.uid}`,
-          name: name || "Shantanu Shekhar",
+          name: name || (email === "aetrix8@gmail.com" ? "Aetrix (Admin)" : "Shantanu Shekhar"),
           email: email,
           phone: phone || existing?.phone || "9546883777",
           role: "admin",
@@ -470,7 +476,9 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     if (currentUser?.role === "admin") {
       return true;
     }
-    toast.info("Please sign in with your verified Google Admin account (vedtravels0777@gmail.com)");
+    toast.info("Master Admin Access Required", {
+      description: "Please sign in with your verified Google Admin account (vedtravels0777@gmail.com or aetrix8@gmail.com).",
+    });
     signInWithGoogle("renter");
     return false;
   };
