@@ -15,9 +15,21 @@ export function MobileBottomNav() {
     openAdminDashboard,
   } = useRental();
 
-  const activeBookingsCount = bookings.filter(
-    (b) => b.status === "confirmed" || b.status === "in_trip"
-  ).length;
+  const activeBookingsCount = currentUser?.role === "admin"
+    ? bookings.filter((b) => b.status === "confirmed" || b.status === "in_trip").length
+    : currentUser
+    ? bookings.filter((b) => {
+        const bEmail = (b.renterEmail || "").trim().toLowerCase();
+        const bUid = b.renterUid || b.renterId || "";
+        const uEmail = (currentUser.email || "").trim().toLowerCase();
+        const uUid = currentUser.uid || currentUser.id || "";
+        const matches = Boolean(
+          (uEmail && bEmail === uEmail) ||
+          (uUid && (bUid === uUid || bUid === currentUser.id))
+        );
+        return matches && (b.status === "confirmed" || b.status === "in_trip" || b.status === "pending_payment");
+      }).length
+    : 0;
 
   const handleHomeClick = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });

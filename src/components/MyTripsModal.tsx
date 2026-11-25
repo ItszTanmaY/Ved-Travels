@@ -28,6 +28,7 @@ export default function MyTripsModal() {
     cancelBooking,
     currentUser,
     updateKyc,
+    openAuthModal,
   } = useRental();
 
   const [dlInput, setDlInput] = useState(currentUser?.dlNumber || "");
@@ -36,11 +37,25 @@ export default function MyTripsModal() {
 
   if (!myTripsModalOpen) return null;
 
+  const userEmail = (currentUser?.email || "").trim().toLowerCase();
+  const userUid = currentUser?.uid || currentUser?.id || "";
+
+  // Strict user-scoped filtering: Admins see all; Renters only see their own trips; Guests see empty list
   const userBookings = currentUser?.role === "admin"
     ? bookings
-    : currentUser
-    ? bookings.filter((b) => b.renterId === currentUser.id || b.renterPhone.includes(currentUser.phone))
-    : bookings;
+    : currentUser && (userEmail || userUid)
+    ? bookings.filter((b) => {
+        const bEmail = (b.renterEmail || "").trim().toLowerCase();
+        const bUid = b.renterUid || b.renterId || "";
+        const emailMatches = Boolean(userEmail && bEmail && bEmail === userEmail);
+        const uidMatches = Boolean(
+          userUid &&
+            bUid &&
+            (bUid === userUid || bUid === currentUser.id || (currentUser.uid && bUid === currentUser.uid))
+        );
+        return emailMatches || uidMatches;
+      })
+    : [];
 
   const handleSaveKyc = (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,17 +176,40 @@ export default function MyTripsModal() {
 
           {/* Bookings List */}
           <div className="space-y-4">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-black/40">
-              Active & Upcoming Reservations ({userBookings.length})
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-black/40">
+                Active & Upcoming Reservations ({userBookings.length})
+              </h4>
+              {currentUser?.email && (
+                <span className="text-[11px] font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 truncate max-w-[220px]">
+                  {currentUser.email}
+                </span>
+              )}
+            </div>
 
             {userBookings.length === 0 ? (
               <div className="text-center py-12 bg-[#FAFAF9] rounded-2xl border border-black/5 p-6">
                 <KeyRound className="w-8 h-8 text-black/30 mx-auto mb-2" />
-                <p className="text-sm font-bold text-black">No active bookings found</p>
-                <p className="text-xs text-black/50 mt-1 max-w-sm mx-auto">
-                  Browse our Vadodara fleet and click &quot;Book Now&quot; to reserve your vehicle in 1 click.
+                <p className="text-sm font-bold text-black">
+                  {!currentUser ? "Sign In to View Your Reservations" : "No active bookings found"}
                 </p>
+                <p className="text-xs text-black/50 mt-1 max-w-sm mx-auto">
+                  {!currentUser
+                    ? "Please sign in with your verified Google account to view your bookings and access your 4-digit start OTP."
+                    : "Browse our Vadodara fleet and click \"Book Now\" to reserve your vehicle in 1 click."}
+                </p>
+                {!currentUser && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMyTripsModal();
+                      openAuthModal("renter");
+                    }}
+                    className="mt-4 px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-md active:scale-95 cursor-pointer inline-flex items-center gap-1.5"
+                  >
+                    <span>Sign In with Google</span>
+                  </button>
+                )}
               </div>
             ) : (
               userBookings.map((booking) => (

@@ -13,7 +13,14 @@ import {
 } from "@/data/fleet";
 import { toast } from "sonner";
 import { signInWithPopup, signOut } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import {
+  collection,
+  doc,
+  setDoc,
+  updateDoc,
+  onSnapshot,
+} from "firebase/firestore";
+import { auth, db, googleProvider } from "@/lib/firebase";
 import {
   syncBookingToGoogleSheets,
   syncVehicleToGoogleSheets,
@@ -235,6 +242,72 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Real-time Cloud Firestore listener for Bookings (Shared across all devices & accounts)
+  useEffect(() => {
+    try {
+      const bookingsCol = collection(db, "bookings");
+      const unsubscribe = onSnapshot(
+        bookingsCol,
+        (snapshot) => {
+          const list: Booking[] = [];
+          snapshot.forEach((d) => {
+            list.push(d.data() as Booking);
+          });
+          list.sort(
+            (a, b) => (b.createdAtTimestamp || 0) - (a.createdAtTimestamp || 0)
+          );
+          setBookings(list);
+          try {
+            localStorage.setItem(BOOKINGS_KEY, JSON.stringify(list));
+          } catch {}
+        },
+        (error) => {
+          console.warn("Firestore bookings listener notice:", error);
+        }
+      );
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn("Failed to attach Firestore bookings listener:", err);
+    }
+  }, []);
+
+  // Real-time Cloud Firestore listener for Fleet Vehicles
+  useEffect(() => {
+    try {
+      const vehiclesCol = collection(db, "vehicles");
+      const unsubscribe = onSnapshot(
+        vehiclesCol,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const list: Vehicle[] = [];
+            snapshot.forEach((d) => {
+              list.push(d.data() as Vehicle);
+            });
+            // Merge with initial vehicles to ensure base fleet is always complete
+            const vehicleMap = new Map(INITIAL_VEHICLES.map((v) => [v.id, v]));
+            list.forEach((v) => vehicleMap.set(v.id, v));
+            const merged = Array.from(vehicleMap.values());
+            setVehicles(merged);
+            try {
+              localStorage.setItem(VEHICLES_KEY, JSON.stringify(merged));
+            } catch {}
+          } else {
+            // Seed initial vehicles into Firestore
+            INITIAL_VEHICLES.forEach((v) => {
+              setDoc(doc(db, "vehicles", v.id), v, { merge: true }).catch(() => {});
+            });
+          }
+        },
+        (error) => {
+          console.warn("Firestore vehicles listener notice:", error);
+        }
+      );
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn("Failed to attach Firestore vehicles listener:", err);
+    }
+  }, []);
+
   // 20-Minute Auto-Expiry cleaner: If an unapproved pending booking exceeds 20 mins, unlock vehicle
   useEffect(() => {
     const checkExpiredBookings = () => {
@@ -251,6 +324,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
 
             if (bookingTime > 0 && now - bookingTime > TWENTY_MINUTES_MS) {
               changed = true;
+              try {
+                updateDoc(doc(db, "bookings", b.id), {
+                  status: "cancelled",
+                  expiredReason: "Vehicle hold released: 20-minute verification window expired without admin approval.",
+                }).catch(() => {});
+              } catch {}
               return {
                 ...b,
                 status: "cancelled" as const,
@@ -349,6 +428,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       if (isAdmin) {
         userToSet = {
           id: existing?.id || `admin-${firebaseUser.uid}`,
+          uid: firebaseUser.uid,
           name: name || (email === "aetrix8@gmail.com" ? "Aetrix (Admin)" : "Shantanu Shekhar"),
           email: email,
           phone: phone || existing?.phone || "9546883777",
@@ -364,6 +444,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         const assignedRole = existing?.role || chosenRole;
         userToSet = {
           id: existing?.id || `usr-${firebaseUser.uid}`,
+          uid: firebaseUser.uid,
           name: name,
           email: email,
           phone: phone || existing?.phone || "",
@@ -552,6 +633,13 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateVehiclePricing = (vehicleId: string, hourlyRate: number, dailyRate: number) => {
+    try {
+      updateDoc(doc(db, "vehicles", vehicleId), {
+        hourlyRate,
+        dailyRate,
+        "slabs.hr24": dailyRate,
+      }).catch(() => {});
+    } catch {}
     const updated: Vehicle[] = vehicles.map((v) =>
       v.id === vehicleId
         ? {
@@ -611,6 +699,9 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       securityDeposit: 0,
       bookedSlots: [],
     };
+    try {
+      setDoc(doc(db, "vehicles", vehicleWithMeta.id), vehicleWithMeta).catch(() => {});
+    } catch {}
     const updated = [vehicleWithMeta, ...vehicles];
     saveVehicles(updated);
 
@@ -630,6 +721,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   };
 
   const approveVehicle = (vehicleId: string) => {
+    try {
+      updateDoc(doc(db, "vehicles", vehicleId), {
+        approvalStatus: "approved",
+        available: true,
+      }).catch(() => {});
+    } catch {}
     const updated = vehicles.map((v) =>
       v.id === vehicleId ? { ...v, approvalStatus: "approved" as const, available: true } : v
     );
@@ -644,6 +741,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   };
 
   const rejectVehicle = (vehicleId: string) => {
+    try {
+      updateDoc(doc(db, "vehicles", vehicleId), {
+        approvalStatus: "rejected",
+        available: false,
+      }).catch(() => {});
+    } catch {}
     const updated = vehicles.map((v) =>
       v.id === vehicleId ? { ...v, approvalStatus: "rejected" as const, available: false } : v
     );
@@ -798,6 +901,9 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     const hostEarnings = isHostVehicle ? Math.round(baseRent * 0.70) : 0;
     const platformFee = isHostVehicle ? baseRent - hostEarnings : 0;
 
+    const renterUid = currentUser?.uid || currentUser?.id || "guest-renter";
+    const renterEmail = currentUser?.email ? currentUser.email.toLowerCase().trim() : "";
+
     const newBooking: Booking = {
       id: `booking-${Date.now()}`,
       bookingCode,
@@ -807,6 +913,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       vehicleCategory: params.vehicle.category,
       vehicleImage: params.vehicle.images[0] || "",
       renterId: currentUser ? currentUser.id : "guest-renter",
+      renterUid,
+      renterEmail,
       renterName: currentUser ? currentUser.name : "Vadodara Traveler",
       renterPhone: currentUser ? currentUser.phone : "9546883777",
       startDate: pickupTime,
@@ -844,6 +952,15 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       hubAddress: `${resolvedLocation}, Vadodara, Gujarat`,
       syncedToGoogleSheets: false,
     };
+
+    // Real-time Cloud Firestore persistence (syncs instantly across all devices)
+    try {
+      setDoc(doc(db, "bookings", newBooking.id), newBooking).catch((err) => {
+        console.warn("Firestore setDoc booking warning:", err);
+      });
+    } catch (err) {
+      console.warn("Firestore setDoc booking error:", err);
+    }
 
     const updatedBookings = [newBooking, ...bookings];
     saveBookings(updatedBookings);
@@ -890,6 +1007,19 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     }
 
     const generatedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    // Sync to Cloud Firestore in real time
+    try {
+      updateDoc(doc(db, "bookings", bookingId), {
+        status: "confirmed",
+        otp: generatedOtp,
+      }).catch((err) => {
+        console.warn("Firestore verifyPayment updateDoc warning:", err);
+      });
+    } catch (err) {
+      console.warn("Firestore verifyPayment updateDoc error:", err);
+    }
+
     const updated = bookings.map((b) =>
       b.id === bookingId
         ? {
@@ -917,6 +1047,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (booking.otp === enteredOtp.trim()) {
+      try {
+        updateDoc(doc(db, "bookings", bookingId), {
+          status: "in_trip",
+        }).catch(() => {});
+      } catch {}
+
       const updated = bookings.map((b) =>
         b.id === bookingId ? { ...b, status: "in_trip" as const } : b
       );
@@ -942,6 +1078,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     const booking = bookings.find((b) => b.id === bookingId);
     if (!booking) return;
 
+    try {
+      updateDoc(doc(db, "bookings", bookingId), {
+        status,
+      }).catch(() => {});
+    } catch {}
+
     const updated = bookings.map((b) => (b.id === bookingId ? { ...b, status } : b));
     saveBookings(updated);
 
@@ -965,17 +1107,28 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
 
   const clearHostPayout = (bookingId: string, utr?: string) => {
     const booking = bookings.find((b) => b.id === bookingId);
+    const payoutUtrVal = utr || "UPI-SETTLED";
+    const payoutDateVal = new Date().toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+    try {
+      updateDoc(doc(db, "bookings", bookingId), {
+        hostPayoutStatus: "paid",
+        payoutUtr: payoutUtrVal,
+        payoutDate: payoutDateVal,
+      }).catch(() => {});
+    } catch {}
+
     const updated = bookings.map((b) =>
       b.id === bookingId
         ? {
             ...b,
             hostPayoutStatus: "paid" as const,
-            payoutUtr: utr || "UPI-SETTLED",
-            payoutDate: new Date().toLocaleDateString("en-IN", {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            }),
+            payoutUtr: payoutUtrVal,
+            payoutDate: payoutDateVal,
           }
         : b
     );
@@ -993,6 +1146,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     const booking = bookings.find((b) => b.id === bookingId);
     if (!booking) return;
 
+    try {
+      updateDoc(doc(db, "bookings", bookingId), {
+        status: "confirmed",
+      }).catch(() => {});
+    } catch {}
+
     const updated = bookings.map((b) =>
       b.id === bookingId ? { ...b, status: "confirmed" as const } : b
     );
@@ -1009,6 +1168,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   const cancelBooking = (bookingId: string) => {
     const booking = bookings.find((b) => b.id === bookingId);
     if (!booking) return;
+
+    try {
+      updateDoc(doc(db, "bookings", bookingId), {
+        status: "cancelled",
+      }).catch(() => {});
+    } catch {}
 
     const updated = bookings.map((b) =>
       b.id === bookingId ? { ...b, status: "cancelled" as const } : b

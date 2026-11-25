@@ -78,9 +78,14 @@ export default function HostDashboardModal() {
 
   const isHostPendingApproval = currentUser?.role === "host" && currentUser?.hostStatus === "pending_approval";
 
-  // Filter vehicles belonging to this host
+  // Filter vehicles belonging strictly to this host
   const hostVehicles = vehicles.filter(
-    (v) => (currentUser?.id && v.hostId === currentUser.id) || v.ownerType === "host"
+    (v) =>
+      Boolean(
+        (currentUser?.id && v.hostId === currentUser.id) ||
+        (currentUser?.uid && v.hostId === currentUser.uid) ||
+        (currentUser?.email && v.hostName && v.hostName.toLowerCase().includes(currentUser.name.toLowerCase()))
+      )
   );
 
   // Bookings for this host's vehicles

@@ -42,6 +42,8 @@ export interface Booking {
   vehicleCategory: "bike" | "car";
   vehicleImage: string;
   renterId: string;
+  renterUid?: string; // Firebase Auth UID for strict user-scoped trips
+  renterEmail?: string; // User email for isolated account access
   renterName: string;
   renterPhone: string;
   startDate: string;
@@ -111,6 +113,7 @@ export const VED_UPI_CONFIG = {
 
 export interface User {
   id: string;
+  uid?: string;
   name: string;
   phone: string;
   email: string;
