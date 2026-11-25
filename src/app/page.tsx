@@ -67,8 +67,8 @@ export default function Home() {
 
   const dailyYield = hostVehicleType === "car" ? 2200 : 750;
   const grossMonthly = dailyYield * hostDays;
-  const platformFee = Math.round(grossMonthly * 0.25);
-  const netMonthly = grossMonthly - platformFee;
+  const platformFee = Math.round(grossMonthly * 0.30); // 30% Ved Travels platform fee
+  const netMonthly = grossMonthly - platformFee; // 70% Host Partner Earning
   const annualized = netMonthly * 12;
 
   const scrollTo = (id: string) => {
@@ -722,6 +722,16 @@ export default function Home() {
               Turn your parked bike or car in Vadodara into passive income. We manage complete renter verification,
               ₹10 Lakh commercial insurance cover, and free doorstep GPS tracking.
             </p>
+
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-950 space-y-1 mt-3">
+              <div className="font-bold flex items-center gap-1.5 text-emerald-900">
+                <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Earn 70% of every completed booking fare (30% Ved Travels platform fee).</span>
+              </div>
+              <p className="text-[11px] text-emerald-800">
+                All renter payments are collected by Ved Travels first and settled directly to your UPI/Bank account after trip completion.
+              </p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -856,7 +866,7 @@ export default function Home() {
                   </div>
 
                   <div className="flex justify-between items-center text-white/40">
-                    <span>Platform & Insurance Fee (25%):</span>
+                    <span>Ved Travels Platform Fee (30%):</span>
                     <span className="font-bold text-red-400 text-sm tabular-nums">
                       - {formatINR(platformFee)}
                     </span>
@@ -864,7 +874,7 @@ export default function Home() {
 
                   <div className="pt-4 border-t border-white/10">
                     <span className="text-xs font-bold text-white/50 uppercase block">
-                      Net Monthly Payout to Your Bank:
+                      Net Monthly Payout to Your Bank (70%):
                     </span>
                     <div className="text-4xl sm:text-5xl font-bold text-emerald-400 tracking-tight mt-1 tabular-nums">
                       {formatINR(netMonthly)}

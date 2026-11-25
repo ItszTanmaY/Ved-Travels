@@ -19,6 +19,7 @@ import {
   syncVehicleToGoogleSheets,
   syncUserToGoogleSheets,
   updateBookingStatusInGoogleSheets,
+  updatePayoutStatusInGoogleSheets,
   approveVehicleInGoogleSheets,
   rejectVehicleInGoogleSheets,
   approveHostInGoogleSheets,
@@ -104,7 +105,7 @@ interface RentalContextType {
     bookingId: string,
     status: "confirmed" | "in_trip" | "completed" | "cancelled"
   ) => void;
-  clearHostPayout: (bookingId: string) => void;
+  clearHostPayout: (bookingId: string, utr?: string) => void;
   googleSheetsSyncing: boolean;
 
   // Search & Filter state
@@ -784,9 +785,9 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
 
     const resolvedLocation = params.pickupLocation || selectedLocation || "Vadodara Railway Station";
 
-    // Host earnings calculation (75% to Host, 25% Platform Fee if host-owned)
+    // Host earnings calculation (70% to Host, 30% Ved Travels Platform Commission if host-owned)
     const isHostVehicle = params.vehicle.ownerType === "host";
-    const hostEarnings = isHostVehicle ? Math.round(baseRent * 0.75) : 0;
+    const hostEarnings = isHostVehicle ? Math.round(baseRent * 0.70) : 0;
     const platformFee = isHostVehicle ? baseRent - hostEarnings : 0;
 
     const newBooking: Booking = {
@@ -821,6 +822,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       hostId: params.vehicle.hostId,
       hostEarnings,
       platformFee,
+      hostShare70: hostEarnings,
+      platformCommission30: platformFee,
       hostPayoutStatus: isHostVehicle ? "pending" : undefined,
       status,
       createdAtTimestamp: Date.now(),
@@ -952,12 +955,30 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     updateBookingStatusInGoogleSheets(booking.bookingCode, status);
   };
 
-  const clearHostPayout = (bookingId: string) => {
+  const clearHostPayout = (bookingId: string, utr?: string) => {
+    const booking = bookings.find((b) => b.id === bookingId);
     const updated = bookings.map((b) =>
-      b.id === bookingId ? { ...b, hostPayoutStatus: "paid" as const } : b
+      b.id === bookingId
+        ? {
+            ...b,
+            hostPayoutStatus: "paid" as const,
+            payoutUtr: utr || "UPI-SETTLED",
+            payoutDate: new Date().toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            }),
+          }
+        : b
     );
     saveBookings(updated);
-    toast.success("Payout Cleared for Host Partner!");
+    toast.success("Payout Cleared for Host Partner!", {
+      description: utr ? `Settlement UTR: ${utr}` : "Marked as Paid in Ledger.",
+    });
+
+    if (booking) {
+      updatePayoutStatusInGoogleSheets(booking.bookingCode, "Paid", utr);
+    }
   };
 
   const verifyOfflineBooking = (bookingId: string) => {

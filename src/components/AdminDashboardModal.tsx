@@ -55,6 +55,8 @@ export default function AdminDashboardModal() {
 
   // OTP verify input state per booking
   const [otpInputs, setOtpInputs] = useState<{ [bookingId: string]: string }>({});
+  // Payout UTR input state per booking
+  const [payoutUtrInputs, setPayoutUtrInputs] = useState<{ [bookingId: string]: string }>({});
 
   if (!adminDashboardOpen) return null;
 
@@ -97,8 +99,47 @@ export default function AdminDashboardModal() {
   );
 
   const totalHostBookingsValue = hostBookings.reduce((sum, b) => sum + b.totalAmount, 0);
-  const totalHostPayoutDue = hostBookings.reduce((sum, b) => sum + (b.hostEarnings || Math.round(b.totalAmount * 0.75)), 0);
+  const totalHostPayoutDue = hostBookings.reduce(
+    (sum, b) => sum + (b.hostEarnings || Math.round(b.totalAmount * 0.70)),
+    0
+  );
   const totalPlatformCommissions = totalHostBookingsValue - totalHostPayoutDue;
+
+  // Group host bookings by host partner for ledger summary
+  const hostPartnersSummary = Array.from(
+    new Set(hostBookings.map((b) => b.hostName || "Host Partner"))
+  ).map((hostName) => {
+    const partnerBookings = hostBookings.filter((b) => (b.hostName || "Host Partner") === hostName);
+    const totalBookingsCount = partnerBookings.length;
+    const grossRev = partnerBookings.reduce((sum, b) => sum + b.totalAmount, 0);
+    const hostPayable70 = partnerBookings.reduce(
+      (sum, b) => sum + (b.hostEarnings || Math.round(b.totalAmount * 0.70)),
+      0
+    );
+    const vedComm30 = partnerBookings.reduce(
+      (sum, b) => sum + (b.platformFee || b.totalAmount - (b.hostEarnings || Math.round(b.totalAmount * 0.70))),
+      0
+    );
+    const pendingCount = partnerBookings.filter((b) => b.hostPayoutStatus !== "paid").length;
+    const pendingAmount = partnerBookings
+      .filter((b) => b.hostPayoutStatus !== "paid")
+      .reduce((sum, b) => sum + (b.hostEarnings || Math.round(b.totalAmount * 0.70)), 0);
+    const paidAmount = partnerBookings
+      .filter((b) => b.hostPayoutStatus === "paid")
+      .reduce((sum, b) => sum + (b.hostEarnings || Math.round(b.totalAmount * 0.70)), 0);
+
+    return {
+      hostName,
+      totalBookingsCount,
+      grossRev,
+      hostPayable70,
+      vedComm30,
+      pendingCount,
+      pendingAmount,
+      paidAmount,
+      bookings: partnerBookings,
+    };
+  });
 
   const handleOtpVerify = (bookingId: string) => {
     const entered = (otpInputs[bookingId] || "").trim();
@@ -633,21 +674,72 @@ export default function AdminDashboardModal() {
                 </div>
 
                 <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl">
-                  <span className="text-[10px] font-bold text-amber-800 uppercase block">Host Payouts Due (75%)</span>
+                  <span className="text-[10px] font-bold text-amber-800 uppercase block">Host Payouts Due (70%)</span>
                   <div className="text-2xl sm:text-3xl font-extrabold text-amber-950 mt-1 tabular-nums">
                     {formatINR(totalHostPayoutDue)}
                   </div>
-                  <span className="text-[11px] text-amber-700 mt-1 block">Weekly Monday transfers</span>
+                  <span className="text-[11px] text-amber-700 mt-1 block">Payable after trip completion</span>
                 </div>
 
                 <div className="bg-purple-50 border border-purple-200 p-4 rounded-2xl">
-                  <span className="text-[10px] font-bold text-purple-800 uppercase block">Ved Platform Commission (25%)</span>
+                  <span className="text-[10px] font-bold text-purple-800 uppercase block">Ved Platform Commission (30%)</span>
                   <div className="text-2xl sm:text-3xl font-extrabold text-purple-950 mt-1 tabular-nums">
                     {formatINR(totalPlatformCommissions)}
                   </div>
-                  <span className="text-[11px] text-purple-700 mt-1 block">Partner fee retained</span>
+                  <span className="text-[11px] text-purple-700 mt-1 block">Platform fee retained</span>
                 </div>
               </div>
+
+              {/* Host Partners Aggregate Summary Table */}
+              {hostPartnersSummary.length > 0 && (
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                  <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <span className="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+                      <IndianRupee className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Host Partner Summary (70% Host / 30% Ved Travels)</span>
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      {hostPartnersSummary.length} Partner{hostPartnersSummary.length === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-slate-100 text-slate-600 font-bold uppercase text-[10px]">
+                        <tr>
+                          <th className="px-4 py-2.5">Host Partner</th>
+                          <th className="px-4 py-2.5">Bookings</th>
+                          <th className="px-4 py-2.5">Gross Revenue</th>
+                          <th className="px-4 py-2.5 text-purple-700">Ved Fee (30%)</th>
+                          <th className="px-4 py-2.5 text-emerald-700">Host Share (70%)</th>
+                          <th className="px-4 py-2.5 text-amber-700">Pending Settlement</th>
+                          <th className="px-4 py-2.5 text-emerald-800">Settled (Paid)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium">
+                        {hostPartnersSummary.map((hp) => (
+                          <tr key={hp.hostName} className="hover:bg-slate-50">
+                            <td className="px-4 py-3 font-bold text-slate-900">{hp.hostName}</td>
+                            <td className="px-4 py-3 tabular-nums">{hp.totalBookingsCount} trips</td>
+                            <td className="px-4 py-3 font-bold tabular-nums">{formatINR(hp.grossRev)}</td>
+                            <td className="px-4 py-3 font-bold text-purple-700 tabular-nums">{formatINR(hp.vedComm30)}</td>
+                            <td className="px-4 py-3 font-bold text-emerald-700 tabular-nums">{formatINR(hp.hostPayable70)}</td>
+                            <td className="px-4 py-3 font-bold text-amber-700 tabular-nums">
+                              {hp.pendingAmount > 0 ? (
+                                <span className="bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full text-[11px]">
+                                  {formatINR(hp.pendingAmount)} ({hp.pendingCount})
+                                </span>
+                              ) : (
+                                <span className="text-slate-400">₹0 (All Settled)</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 font-bold text-emerald-800 tabular-nums">{formatINR(hp.paidAmount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               {/* Host Partner Bookings Breakdown Table */}
               <div className="space-y-3">
@@ -656,7 +748,7 @@ export default function AdminDashboardModal() {
                     <IndianRupee className="w-4 h-4 text-emerald-600" />
                     <span>Host Partner Bookings & Payout Ledger</span>
                   </h4>
-                  <span className="text-xs text-slate-500">Prorated 75% Host / 25% Ved Travels</span>
+                  <span className="text-xs text-slate-500 font-medium">Split: 70% Host / 30% Ved Travels</span>
                 </div>
 
                 {hostBookings.length === 0 ? (
@@ -667,7 +759,7 @@ export default function AdminDashboardModal() {
                 ) : (
                   <div className="space-y-3">
                     {hostBookings.map((b) => {
-                      const hostPay = b.hostEarnings || Math.round(b.totalAmount * 0.75);
+                      const hostPay = b.hostEarnings || Math.round(b.totalAmount * 0.70);
                       const platformCut = b.platformFee || b.totalAmount - hostPay;
                       const isPaid = b.hostPayoutStatus === "paid";
                       return (
@@ -682,26 +774,51 @@ export default function AdminDashboardModal() {
                               <span className="font-mono text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-700">
                                 {b.bookingCode}
                               </span>
+                              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                                b.status === "completed"
+                                  ? "bg-slate-100 text-slate-700"
+                                  : "bg-emerald-100 text-emerald-800"
+                              }`}>
+                                {b.status}
+                              </span>
                             </div>
                             <p className="text-xs text-slate-600">
-                              Gross: {formatINR(b.totalAmount)} • Host Net (75%): <strong className="text-emerald-700">{formatINR(hostPay)}</strong> • Ved Fee (25%): {formatINR(platformCut)}
+                              Gross: {formatINR(b.totalAmount)} • Host Net (70%): <strong className="text-emerald-700">{formatINR(hostPay)}</strong> • Ved Fee (30%): {formatINR(platformCut)}
                             </p>
                           </div>
 
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap w-full sm:w-auto">
                             {isPaid ? (
-                              <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-300 flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>Payout Cleared</span>
-                              </span>
+                              <div className="text-right">
+                                <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-300 inline-flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>Payout Settled (Paid)</span>
+                                </span>
+                                {b.payoutUtr && (
+                                  <span className="block text-[10px] font-mono text-slate-400 mt-0.5">
+                                    UTR: {b.payoutUtr} {b.payoutDate ? `• ${b.payoutDate}` : ""}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => clearHostPayout(b.id)}
-                                className="h-9 px-3.5 bg-slate-900 hover:bg-black text-white font-bold text-xs rounded-xl cursor-pointer"
-                              >
-                                Mark Payout Paid
-                              </button>
+                              <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                                <input
+                                  type="text"
+                                  placeholder="UPI UTR / Bank Ref (optional)"
+                                  value={payoutUtrInputs[b.id] || ""}
+                                  onChange={(e) =>
+                                    setPayoutUtrInputs((prev) => ({ ...prev, [b.id]: e.target.value }))
+                                  }
+                                  className="h-9 px-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden w-full sm:w-48 font-mono"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => clearHostPayout(b.id, payoutUtrInputs[b.id])}
+                                  className="h-9 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl cursor-pointer whitespace-nowrap active:scale-95 shadow-xs transition-all"
+                                >
+                                  Mark Payout Paid
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>

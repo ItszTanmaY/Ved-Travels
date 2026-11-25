@@ -87,9 +87,28 @@ export default function HostDashboardModal() {
   const hostVehicleIds = hostVehicles.map((v) => v.id);
   const hostBookings = bookings.filter((b) => hostVehicleIds.includes(b.vehicleId));
 
-  const totalGrossEarnings = hostBookings.reduce((sum, b) => (b.status !== "cancelled" ? sum + b.totalAmount : sum), 0);
-  const platformFee = Math.round(totalGrossEarnings * 0.25);
-  const netEarnings = totalGrossEarnings - platformFee;
+  // Real-time figures calculated strictly from COMPLETED trips
+  const completedTrips = hostBookings.filter((b) => b.status === "completed");
+
+  // 1. Gross Trip Value (₹) (100% booking fare)
+  const grossTripValue = completedTrips.reduce((sum, b) => sum + b.totalAmount, 0);
+
+  // 2. Your Net Share — 70% (₹)
+  const hostNetShare70 = completedTrips.reduce(
+    (sum, b) => sum + (b.hostEarnings ?? Math.round(b.baseRent * 0.70)),
+    0
+  );
+
+  // 3. Pending Settlement (₹) (Completed trips awaiting transfer from Ved Travels)
+  const pendingSettlement = completedTrips
+    .filter((b) => b.hostPayoutStatus !== "paid")
+    .reduce((sum, b) => sum + (b.hostEarnings ?? Math.round(b.baseRent * 0.70)), 0);
+
+  // 4. Settled / Paid Out (₹)
+  const settledPaidOut = completedTrips
+    .filter((b) => b.hostPayoutStatus === "paid")
+    .reduce((sum, b) => sum + (b.hostEarnings ?? Math.round(b.baseRent * 0.70)), 0);
+
   const activeVehiclesCount = hostVehicles.filter((v) => v.available && v.approvalStatus === "approved").length;
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -315,56 +334,148 @@ export default function HostDashboardModal() {
           {/* TAB 1: OVERVIEW & PAYOUTS */}
           {activeTab === "overview" && (
             <div className="space-y-6">
-              {/* Stat Cards */}
+              {/* Stat Cards - Strictly from Completed Trips */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* 1. Gross Trip Value */}
                 <div className="bg-[#FAFAF9] border border-black/5 p-4 rounded-2xl">
                   <span className="text-[10px] font-bold text-black/40 uppercase block mb-1">
-                    Net Earnings (75%)
+                    Gross Trip Value (100%)
+                  </span>
+                  <div className="text-2xl sm:text-3xl font-bold text-slate-900 tabular-nums">
+                    {formatINR(grossTripValue)}
+                  </div>
+                  <span className="text-[11px] text-slate-500 font-medium mt-1 block">
+                    {completedTrips.length} completed trip{completedTrips.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                {/* 2. Your Net Share (70%) */}
+                <div className="bg-[#FAFAF9] border border-black/5 p-4 rounded-2xl">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase block mb-1">
+                    Your Net Share — 70%
                   </span>
                   <div className="text-2xl sm:text-3xl font-bold text-emerald-700 tabular-nums">
-                    {formatINR(netEarnings)}
+                    {formatINR(hostNetShare70)}
                   </div>
                   <span className="text-[11px] text-emerald-600 font-semibold mt-1 block">
-                    After 25% Platform Fee
+                    After 30% Ved Travels platform fee
                   </span>
                 </div>
 
-                <div className="bg-[#FAFAF9] border border-black/5 p-4 rounded-2xl">
-                  <span className="text-[10px] font-bold text-black/40 uppercase block mb-1">
-                    Active Approved Fleet
+                {/* 3. Pending Settlement */}
+                <div className="bg-[#FAFAF9] border border-amber-200/80 p-4 rounded-2xl bg-amber-50/50">
+                  <span className="text-[10px] font-bold text-amber-800 uppercase block mb-1">
+                    Pending Settlement
                   </span>
-                  <div className="text-2xl sm:text-3xl font-bold text-black tabular-nums">
-                    {activeVehiclesCount}{" "}
-                    <span className="text-xs font-normal text-black/40">/ {hostVehicles.length}</span>
+                  <div className="text-2xl sm:text-3xl font-bold text-amber-900 tabular-nums">
+                    {formatINR(pendingSettlement)}
                   </div>
-                  <span className="text-[11px] text-black/50 mt-1 block">
-                    Live for Vadodara bookings
+                  <span className="text-[11px] text-amber-700 font-medium mt-1 block">
+                    Awaiting transfer from Ved Travels
                   </span>
                 </div>
 
-                <div className="bg-[#FAFAF9] border border-black/5 p-4 rounded-2xl">
-                  <span className="text-[10px] font-bold text-black/40 uppercase block mb-1">
-                    Completed Trips
+                {/* 4. Settled / Paid Out */}
+                <div className="bg-[#FAFAF9] border border-emerald-200/80 p-4 rounded-2xl bg-emerald-50/40">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase block mb-1">
+                    Settled / Paid Out
                   </span>
-                  <div className="text-2xl sm:text-3xl font-bold text-black tabular-nums">
-                    {hostBookings.filter((b) => b.status === "completed").length}
+                  <div className="text-2xl sm:text-3xl font-bold text-emerald-800 tabular-nums">
+                    {formatINR(settledPaidOut)}
                   </div>
-                  <span className="text-[11px] text-black/50 mt-1 block">
-                    {hostBookings.length} total reservations
+                  <span className="text-[11px] text-emerald-600 font-medium mt-1 block">
+                    Direct to your UPI / Bank
                   </span>
+                </div>
+              </div>
+
+              {/* Ved Travels Centralized Payment Notice */}
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 flex items-start gap-3">
+                <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-bold text-amber-950">
+                    Payment Collection & Settlement Policy:
+                  </p>
+                  <p className="text-[11px] text-amber-800 leading-relaxed">
+                    All renter payments are collected by Ved Travels first (Shantanu Shekhar — UPI/WhatsApp +91 95468 83777 or cash on pickup) and settled directly to your UPI/Bank account after trip completion.
+                  </p>
+                </div>
+              </div>
+
+              {/* Completed Trips & Settlement Breakdown Table */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-black/50 flex items-center gap-1.5">
+                    <IndianRupee className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Completed Trips & Settlement Breakdown ({completedTrips.length})</span>
+                  </h4>
+                  <span className="text-[11px] text-slate-500 font-medium">Split: 70% Host / 30% Ved Travels</span>
                 </div>
 
-                <div className="bg-[#FAFAF9] border border-black/5 p-4 rounded-2xl">
-                  <span className="text-[10px] font-bold text-black/40 uppercase block mb-1">
-                    Payout Schedule
-                  </span>
-                  <div className="text-xl sm:text-2xl font-bold text-black">
-                    Every Monday
+                {completedTrips.length === 0 ? (
+                  <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
+                    <Clock className="w-7 h-7 text-slate-400 mx-auto mb-1" />
+                    <p className="text-xs font-bold text-slate-800">No Completed Trips Yet</p>
+                    <p className="text-[11px] text-slate-500">
+                      When renters complete trips with your vehicles, payout settlements appear here in real time.
+                    </p>
                   </div>
-                  <span className="text-[11px] text-black/50 mt-1 block">
-                    Direct to UPI / Bank
-                  </span>
-                </div>
+                ) : (
+                  <div className="space-y-2.5">
+                    {completedTrips.map((b) => {
+                      const hostNet = b.hostEarnings ?? Math.round(b.baseRent * 0.70);
+                      const vedCut = b.platformFee ?? (b.totalAmount - hostNet);
+                      const isSettled = b.hostPayoutStatus === "paid";
+
+                      return (
+                        <div
+                          key={b.id}
+                          className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-sm text-slate-900">{b.vehicleName}</span>
+                              <span className="text-[11px] font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                                {b.vehiclePlate}
+                              </span>
+                              <span className="text-[11px] font-mono text-slate-500">
+                                #{b.bookingCode}
+                              </span>
+                            </div>
+                            <div className="text-xs text-slate-600 flex items-center gap-2 flex-wrap">
+                              <span>Trip Fare: <strong>{formatINR(b.totalAmount)}</strong></span>
+                              <span>•</span>
+                              <span>Ved Fee (30%): <span className="text-slate-500">{formatINR(vedCut)}</span></span>
+                              <span>•</span>
+                              <span>Your Net (70%): <strong className="text-emerald-700">{formatINR(hostNet)}</strong></span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {isSettled ? (
+                              <div className="text-right">
+                                <span className="px-3 py-1 bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-300 inline-flex items-center gap-1">
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  <span>Settled / Paid Out</span>
+                                </span>
+                                {b.payoutUtr && (
+                                  <span className="block text-[10px] font-mono text-slate-400 mt-0.5">
+                                    Ref: {b.payoutUtr}
+                                  </span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="px-3 py-1 bg-amber-100 text-amber-900 font-bold text-xs rounded-xl border border-amber-300 inline-flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                                <span>Pending Settlement</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Host Insurance & Protection Banner */}

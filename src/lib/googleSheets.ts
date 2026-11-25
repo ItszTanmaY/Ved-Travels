@@ -7,12 +7,20 @@ import { Booking, Vehicle, User } from "@/data/fleet";
 
 export async function syncBookingToGoogleSheets(booking: Booking) {
   try {
+    const isHost = Boolean(booking.hostId || (booking.hostName && !booking.hostName.includes("Fleet")));
+    const hostShare70 = booking.hostEarnings ?? (isHost ? Math.round(booking.baseRent * 0.70) : 0);
+    const platformCommission30 = booking.platformFee ?? (isHost ? (booking.baseRent - hostShare70) : booking.totalAmount);
+    const payoutStatus = booking.hostPayoutStatus === "paid" ? "Paid" : (isHost ? "Pending Settlement" : "N/A (Fleet)");
+
     const res = await fetch("/api/sheets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "create_booking",
         ...booking,
+        hostShare70,
+        platformCommission30,
+        payoutStatus,
         pickupLocation: booking.pickupLocation || booking.hubName,
         pickupHub: booking.pickupLocation || booking.hubName,
         dlUploaded: booking.dlPhotoUrl ? "Yes (Photo Attached)" : "Pending at Hub",
@@ -159,6 +167,29 @@ export async function rejectHostInGoogleSheets(userId: string) {
     return await res.json();
   } catch (err) {
     console.warn("Google Sheets host rejection notice:", err);
+    return { success: false };
+  }
+}
+
+export async function updatePayoutStatusInGoogleSheets(
+  bookingCode: string,
+  payoutStatus: "Pending Settlement" | "Paid",
+  payoutUtr?: string
+) {
+  try {
+    const res = await fetch("/api/sheets", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update_payout_status",
+        bookingCode,
+        payoutStatus,
+        payoutUtr: payoutUtr || "",
+      }),
+    });
+    return await res.json();
+  } catch (err) {
+    console.warn("Google Sheets payout status update notice:", err);
     return { success: false };
   }
 }

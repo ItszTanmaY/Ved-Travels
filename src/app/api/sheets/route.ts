@@ -23,6 +23,7 @@ const ALLOWED_ACTIONS = [
   "register_user",
   "approve_host",
   "reject_host",
+  "update_payout_status",
 ];
 
 export async function POST(request: Request) {

@@ -77,8 +77,12 @@ export interface Booking {
   hostName?: string;
   hostId?: string;
   hostPayoutStatus?: "pending" | "paid";
-  hostEarnings?: number;
-  platformFee?: number;
+  hostEarnings?: number; // 70% Host Share
+  platformFee?: number; // 30% Ved Travels Fee
+  hostShare70?: number;
+  platformCommission30?: number;
+  payoutUtr?: string;
+  payoutDate?: string;
 }
 
 export const VED_BUSINESS_CONFIG = {
