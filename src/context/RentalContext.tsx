@@ -18,9 +18,10 @@ import {
   doc,
   setDoc,
   updateDoc,
+  getDocs,
   onSnapshot,
 } from "firebase/firestore";
-import { auth, db, googleProvider } from "@/lib/firebase";
+import { auth, db, googleProvider, sanitizeForFirestore } from "@/lib/firebase";
 import {
   syncBookingToGoogleSheets,
   syncVehicleToGoogleSheets,
@@ -153,6 +154,7 @@ interface RentalContextType {
   adminDashboardOpen: boolean;
   openAdminDashboard: () => void;
   closeAdminDashboard: () => void;
+  refreshBookings: () => Promise<void>;
 
   selectedVehicle: Vehicle | null;
   openBookingModal: (vehicle: Vehicle) => void;
@@ -263,6 +265,12 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         },
         (error) => {
           console.warn("Firestore bookings listener notice:", error);
+          if (error.code === "permission-denied") {
+            toast.error("Firebase Database Permission Denied", {
+              description: "Please set Firestore rules to allow read/write in Firebase Console -> Firestore -> Rules.",
+              duration: 8000,
+            });
+          }
         }
       );
       return () => unsubscribe();
@@ -292,9 +300,9 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
               localStorage.setItem(VEHICLES_KEY, JSON.stringify(merged));
             } catch {}
           } else {
-            // Seed initial vehicles into Firestore
+            // Seed initial vehicles safely into Firestore
             INITIAL_VEHICLES.forEach((v) => {
-              setDoc(doc(db, "vehicles", v.id), v, { merge: true }).catch(() => {});
+              setDoc(doc(db, "vehicles", v.id), sanitizeForFirestore(v), { merge: true }).catch(() => {});
             });
           }
         },
@@ -700,7 +708,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       bookedSlots: [],
     };
     try {
-      setDoc(doc(db, "vehicles", vehicleWithMeta.id), vehicleWithMeta).catch(() => {});
+      setDoc(doc(db, "vehicles", vehicleWithMeta.id), sanitizeForFirestore(vehicleWithMeta)).catch(() => {});
     } catch {}
     const updated = [vehicleWithMeta, ...vehicles];
     saveVehicles(updated);
@@ -757,38 +765,20 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     rejectVehicleInGoogleSheets(vehicleId);
   };
 
-  // Real-time Vehicle Locking Check across entire app (with 20-minute auto-unlock for unverified bookings)
+  // Real-time Vehicle Locking Check across entire app:
+  // A vehicle is LOCKED ONLY when a booking is verified & confirmed by Admin or currently in-trip!
+  // Pending inquiries or unverified WhatsApp requests DO NOT block other customers from booking.
   const isVehicleCurrentlyBooked = (vehicleId: string): boolean => {
-    const now = Date.now();
-    const TWENTY_MINUTES_MS = 20 * 60 * 1000;
-
     return bookings.some((b) => {
       if (b.vehicleId !== vehicleId) return false;
 
-      // Confirmed, in-trip, or completed-with-active-keys are hard locked until trip completed/cancelled
-      if (
+      // Confirmed by Admin, in-trip, or active key handovers are strictly locked
+      return (
         b.status === "confirmed" ||
         b.status === "in_trip" ||
         b.status === "confirmed_whatsapp" ||
         b.status === "confirmed_pay_at_hub"
-      ) {
-        return true;
-      }
-
-      // If pending payment/verification, lock vehicle for at most 20 minutes from booking submission
-      if (b.status === "pending_payment" || b.status === "pending_offline_verification") {
-        const bookingTime =
-          b.createdAtTimestamp ||
-          (b.id.startsWith("booking-") ? Number(b.id.replace("booking-", "")) : 0);
-
-        // If older than 20 minutes without Admin confirmation, automatically unlock vehicle!
-        if (bookingTime > 0 && now - bookingTime > TWENTY_MINUTES_MS) {
-          return false;
-        }
-        return true;
-      }
-
-      return false;
+      );
     });
   };
 
@@ -932,15 +922,15 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       totalAmount: total,
       otp,
       paymentMode: resolvedPaymentMode,
-      upiUtr: params.upiUtr,
-      dlPhotoUrl: params.dlPhotoUrl || currentUser?.dlPhotoUrl,
+      upiUtr: params.upiUtr || "",
+      dlPhotoUrl: params.dlPhotoUrl || currentUser?.dlPhotoUrl || "",
       hostName: params.vehicle.hostName || "Ved Fleet Hub",
-      hostId: params.vehicle.hostId,
+      hostId: params.vehicle.hostId || "fleet-central",
       hostEarnings,
       platformFee,
       hostShare70: hostEarnings,
       platformCommission30: platformFee,
-      hostPayoutStatus: isHostVehicle ? "pending" : undefined,
+      hostPayoutStatus: isHostVehicle ? "pending" : "not_applicable",
       status,
       createdAtTimestamp: Date.now(),
       createdAt: new Date().toLocaleDateString("en-IN", {
@@ -953,14 +943,21 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       syncedToGoogleSheets: false,
     };
 
-    // Real-time Cloud Firestore persistence (syncs instantly across all devices)
-    try {
-      setDoc(doc(db, "bookings", newBooking.id), newBooking).catch((err) => {
-        console.warn("Firestore setDoc booking warning:", err);
+    // Real-time Cloud Firestore persistence (sanitized to remove any undefined fields)
+    const sanitizedBooking = sanitizeForFirestore(newBooking);
+    setDoc(doc(db, "bookings", newBooking.id), sanitizedBooking)
+      .then(() => {
+        console.log("Successfully synced booking to Cloud Firestore:", newBooking.id);
+      })
+      .catch((err) => {
+        console.error("Firestore setDoc booking error:", err);
+        if (err?.code === "permission-denied") {
+          toast.error("Firebase Database Permission Denied", {
+            description: "Please set Firestore rules to allow read/write in Firebase Console -> Firestore -> Rules.",
+            duration: 8000,
+          });
+        }
       });
-    } catch (err) {
-      console.warn("Firestore setDoc booking error:", err);
-    }
 
     const updatedBookings = [newBooking, ...bookings];
     saveBookings(updatedBookings);
@@ -1215,6 +1212,27 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
   const openAdminDashboard = () => setAdminDashboardOpen(true);
   const closeAdminDashboard = () => setAdminDashboardOpen(false);
 
+  const refreshBookings = async () => {
+    try {
+      const snap = await getDocs(collection(db, "bookings"));
+      const list: Booking[] = [];
+      snap.forEach((d) => list.push(d.data() as Booking));
+      list.sort((a, b) => (b.createdAtTimestamp || 0) - (a.createdAtTimestamp || 0));
+      setBookings(list);
+      try {
+        localStorage.setItem(BOOKINGS_KEY, JSON.stringify(list));
+      } catch {}
+      toast.success("Trips Refreshed from Cloud Database", {
+        description: `${list.length} reservations loaded.`,
+      });
+    } catch (err: any) {
+      console.warn("Manual refresh notice:", err);
+      toast.error("Could not refresh database", {
+        description: err?.message || "Please check connection or rules.",
+      });
+    }
+  };
+
   const openBookingModal = (vehicle: Vehicle) => {
     if (isVehicleCurrentlyBooked(vehicle.id)) {
       toast.error("Vehicle Currently Booked!", {
@@ -1289,6 +1307,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
         adminDashboardOpen,
         openAdminDashboard,
         closeAdminDashboard,
+        refreshBookings,
         selectedVehicle,
         openBookingModal,
         closeBookingModal,

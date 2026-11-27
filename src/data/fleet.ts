@@ -78,7 +78,7 @@ export interface Booking {
   dlPhotoUrl?: string;
   hostName?: string;
   hostId?: string;
-  hostPayoutStatus?: "pending" | "paid";
+  hostPayoutStatus?: "pending" | "paid" | "not_applicable";
   hostEarnings?: number; // 70% Host Share
   platformFee?: number; // 30% Ved Travels Fee
   hostShare70?: number;

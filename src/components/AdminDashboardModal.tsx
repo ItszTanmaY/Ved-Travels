@@ -46,12 +46,14 @@ export default function AdminDashboardModal() {
     clearHostPayout,
     verifyHandoverOtp,
     googleSheetsSyncing,
+    refreshBookings,
   } = useRental();
 
   const [activeTab, setActiveTab] = useState<"approvals" | "trips" | "ledger">("approvals");
   const [selectedDlImage, setSelectedDlImage] = useState<string | null>(null);
   const [filterTripStatus, setFilterTripStatus] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // OTP verify input state per booking
   const [otpInputs, setOtpInputs] = useState<{ [bookingId: string]: string }>({});
@@ -64,6 +66,7 @@ export default function AdminDashboardModal() {
   const pendingHosts = registeredUsers.filter((u) => u.role === "host" && u.hostStatus === "pending_approval");
   const allHosts = registeredUsers.filter((u) => u.role === "host");
   const pendingVehicles = vehicles.filter((v) => v.approvalStatus === "pending_approval");
+  const pendingPaymentBookings = bookings.filter((b) => b.status === "pending_payment" || b.status === "pending_offline_verification");
 
   // Trips filtering
   const filteredBookings = bookings.filter((b) => {
@@ -225,6 +228,14 @@ export default function AdminDashboardModal() {
           >
             <Clock className="w-4 h-4 text-emerald-400" />
             <span>Live Fleet & Trips Monitor ({bookings.length})</span>
+            {pendingPaymentBookings.length > 0 && (
+              <span
+                className="w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-black flex items-center justify-center animate-pulse shadow-xs"
+                title={`${pendingPaymentBookings.length} booking(s) awaiting payment verification`}
+              >
+                {pendingPaymentBookings.length}
+              </span>
+            )}
           </button>
 
           <button
@@ -445,15 +456,32 @@ export default function AdminDashboardModal() {
                   )}
                 </div>
 
-                <div className="relative w-full sm:w-64">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    placeholder="Search customer, plate..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-emerald-600"
-                  />
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="Search customer, plate..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full h-9 pl-9 pr-3 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-emerald-600"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsRefreshing(true);
+                      await refreshBookings();
+                      setIsRefreshing(false);
+                    }}
+                    disabled={isRefreshing}
+                    className="h-9 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 border border-slate-200"
+                    title="Force refresh reservations from Cloud Firestore"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${isRefreshing ? "animate-spin" : ""}`} />
+                    <span className="hidden sm:inline">Refresh</span>
+                  </button>
                 </div>
               </div>
 
