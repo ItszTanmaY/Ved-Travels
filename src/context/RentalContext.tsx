@@ -921,6 +921,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       securityDeposit: deposit,
       totalAmount: total,
       otp,
+      startOtp: otp,
       paymentMode: resolvedPaymentMode,
       upiUtr: params.upiUtr || "",
       dlPhotoUrl: params.dlPhotoUrl || currentUser?.dlPhotoUrl || "",
@@ -1010,6 +1011,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       updateDoc(doc(db, "bookings", bookingId), {
         status: "confirmed",
         otp: generatedOtp,
+        startOtp: generatedOtp,
       }).catch((err) => {
         console.warn("Firestore verifyPayment updateDoc warning:", err);
       });
@@ -1023,6 +1025,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
             ...b,
             status: "confirmed" as const,
             otp: generatedOtp,
+            startOtp: generatedOtp,
           }
         : b
     );
@@ -1043,7 +1046,8 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
 
-    if (booking.otp === enteredOtp.trim()) {
+    const expectedOtp = (booking.startOtp || booking.otp || "").trim();
+    if (expectedOtp && expectedOtp === enteredOtp.trim()) {
       try {
         updateDoc(doc(db, "bookings", bookingId), {
           status: "in_trip",

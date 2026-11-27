@@ -559,24 +559,61 @@ export default function AdminDashboardModal() {
                           <span className="text-slate-500 text-[10px]">Owner: {b.hostName || "Ved Fleet Hub"}</span>
                         </div>
 
-                        {/* 4-Digit Handover OTP Card */}
+                        {/* Handover Security & Status Card (OTP Masked for Security) */}
                         <div className={`p-2.5 rounded-xl border flex flex-col justify-between ${
-                          b.otp ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"
+                          b.status === "in_trip"
+                            ? "bg-purple-50 border-purple-200"
+                            : (b.status === "confirmed" || b.status === "confirmed_whatsapp" || b.status === "confirmed_pay_at_hub")
+                            ? "bg-emerald-50 border-emerald-200"
+                            : "bg-amber-50 border-amber-200"
                         }`}>
                           <div className="flex items-center justify-between">
-                            <span className={`text-[10px] uppercase font-bold ${b.otp ? "text-emerald-800" : "text-amber-800"}`}>
-                              4-Digit OTP
+                            <span className={`text-[10px] uppercase font-bold ${
+                              b.status === "in_trip"
+                                ? "text-purple-800"
+                                : (b.status === "confirmed" || b.status === "confirmed_whatsapp" || b.status === "confirmed_pay_at_hub")
+                                ? "text-emerald-800"
+                                : "text-amber-800"
+                            }`}>
+                              Handover Security
                             </span>
-                            <KeyRound className={`w-3.5 h-3.5 ${b.otp ? "text-emerald-600" : "text-amber-600"}`} />
+                            <KeyRound className={`w-3.5 h-3.5 ${
+                              b.status === "in_trip"
+                                ? "text-purple-600"
+                                : (b.status === "confirmed" || b.status === "confirmed_whatsapp" || b.status === "confirmed_pay_at_hub")
+                                ? "text-emerald-600"
+                                : "text-amber-600"
+                            }`} />
                           </div>
-                          {b.otp ? (
-                            <span className="font-mono font-black text-xl text-emerald-950 tracking-widest">
-                              {b.otp}
-                            </span>
+                          {b.status === "in_trip" ? (
+                            <div>
+                              <span className="text-xs font-black text-purple-900 block flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-purple-600" />
+                                <span>Keys Handed Over</span>
+                              </span>
+                              <span className="text-[10px] text-purple-700 font-medium block">
+                                Trip in progress
+                              </span>
+                            </div>
+                          ) : (b.status === "confirmed" || b.status === "confirmed_whatsapp" || b.status === "confirmed_pay_at_hub") ? (
+                            <div>
+                              <span className="text-xs font-black text-emerald-900 block flex items-center gap-1">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>OTP Issued to Renter</span>
+                              </span>
+                              <span className="text-[10px] text-emerald-700 font-medium block">
+                                Ask renter for 4-digit code
+                              </span>
+                            </div>
                           ) : (
-                            <span className="text-[11px] font-bold text-amber-700">
-                              Locked (Verify First)
-                            </span>
+                            <div>
+                              <span className="text-xs font-bold text-amber-900 block">
+                                Verification Pending
+                              </span>
+                              <span className="text-[10px] text-amber-700 font-medium block">
+                                Verify payment to issue OTP
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>

@@ -58,6 +58,7 @@ export interface Booking {
   securityDeposit: number;
   totalAmount: number;
   otp: string; // 4-digit handover OTP
+  startOtp?: string; // 4-digit handover OTP alias
   paymentMode: "upi_advance" | "pay_at_hub" | "whatsapp_booking";
   upiUtr?: string;
   status:

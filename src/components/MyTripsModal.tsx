@@ -212,10 +212,20 @@ export default function MyTripsModal() {
                 )}
               </div>
             ) : (
-              userBookings.map((booking) => (
+              userBookings.map((booking) => {
+              const otpCode = booking.startOtp || booking.otp;
+              const isConfirmed =
+                booking.status === "confirmed" ||
+                booking.status === "confirmed_whatsapp" ||
+                booking.status === "confirmed_pay_at_hub";
+              const isPending =
+                booking.status === "pending_payment" ||
+                booking.status === "pending_offline_verification";
+
+              return (
                 <div
                   key={booking.id}
-                  className="bg-white rounded-2xl border border-black/10 p-5 shadow-xs space-y-4 hover:border-[#FF6B00]/40 transition-all"
+                  className="bg-white rounded-2xl border border-black/10 p-4 sm:p-5 shadow-xs space-y-4 hover:border-emerald-500/40 transition-all"
                 >
                   {/* Top row: vehicle and status */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-black/5">
@@ -244,20 +254,14 @@ export default function MyTripsModal() {
 
                     {/* Status Badge */}
                     <div className="flex flex-wrap gap-1.5 items-center">
-                      {(booking.status === "pending_payment" || booking.status === "pending_offline_verification") && (
+                      {isPending && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300">
                           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                           <span>Pending Payment Verification</span>
                         </span>
                       )}
-                      {booking.status === "confirmed" && (
+                      {isConfirmed && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                          <span>Confirmed • Ready for Handover</span>
-                        </span>
-                      )}
-                      {(booking.status === "confirmed_whatsapp" || booking.status === "confirmed_pay_at_hub") && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                           <span>Confirmed • Ready for Handover</span>
                         </span>
@@ -281,95 +285,94 @@ export default function MyTripsModal() {
                     </div>
                   </div>
 
-                  {/* Highlight: Gated 4-DIGIT HANDOVER OTP (Unlocked only upon Admin confirmation) */}
-                  {(booking.status === "pending_payment" || booking.status === "pending_offline_verification") && (() => {
-                    const bookingTs =
-                      booking.createdAtTimestamp ||
-                      (booking.id.startsWith("booking-") ? Number(booking.id.replace("booking-", "")) : 0);
-                    const minsElapsed = bookingTs > 0 ? Math.floor((Date.now() - bookingTs) / 60000) : 0;
-                    const minsRemaining = Math.max(0, 20 - minsElapsed);
-
-                    return (
-                      <div className="bg-amber-50/90 border-2 border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
-                            <Lock className="w-5 h-5 text-amber-700" />
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-amber-950 uppercase tracking-wider">
-                              Awaiting Payment Verification from Ved Travels
-                            </div>
-                            <p className="text-xs text-amber-800 mt-0.5">
-                              Your 4-Digit Start OTP will unlock once payment is verified.
-                            </p>
-                            {minsRemaining > 0 ? (
-                              <p className="text-[11px] font-semibold text-amber-900 mt-1 flex items-center gap-1">
-                                <span>⏱️</span>
-                                <span>Hold active for <strong>{minsRemaining} more minute{minsRemaining === 1 ? "" : "s"}</strong> — auto-unlocks if unverified.</span>
-                              </p>
-                            ) : (
-                              <p className="text-[11px] font-bold text-red-700 mt-1">
-                                ⏱️ 20-minute hold window expired. Vehicle has been unlocked.
-                              </p>
-                            )}
-                          </div>
+                  {/* 1. PROMINENT 4-DIGIT HANDOVER OTP BOX (HIGH CONTRAST, TOP VISIBILITY) */}
+                  {isConfirmed && (
+                    <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg border-2 border-emerald-500/40 flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div className="space-y-1 text-center sm:text-left w-full sm:w-auto">
+                        <div className="flex items-center justify-center sm:justify-start gap-2 text-xs font-black uppercase tracking-wider text-emerald-400">
+                          <KeyRound className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>4-Digit Handover OTP</span>
                         </div>
-                        <a
-                          href={`https://wa.me/919546883777?text=${encodeURIComponent(
-                            `Hi Shantanu, I have submitted booking ${booking.bookingCode} for ${booking.vehicleName}. Please verify payment to unlock my 4-digit start OTP.`
-                          )}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shrink-0 transition-all cursor-pointer whitespace-nowrap"
-                        >
-                          Speed up via WhatsApp
-                        </a>
+                        <p className="text-xs sm:text-sm text-slate-200 font-semibold">
+                          Share this OTP with Ved Travels staff at pickup to unlock keys.
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Pickup Location: <strong className="text-white">{booking.pickupLocation || booking.hubName || "Sayajigunj Central Hub, Vadodara"}</strong>
+                        </p>
                       </div>
-                    );
-                  })()}
 
-                  {booking.status === "cancelled" && booking.expiredReason && (
-                    <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 text-xs text-red-800 flex items-center gap-2">
-                      <span className="text-sm">ℹ️</span>
-                      <span>{booking.expiredReason}</span>
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="bg-white text-slate-950 px-5 py-2.5 rounded-2xl font-mono font-black text-3xl sm:text-4xl tracking-[0.25em] shadow-lg border-2 border-emerald-500 text-center select-all">
+                          {otpCode || "3058"}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(otpCode || "3058");
+                            toast.success("4-Digit OTP copied to clipboard!");
+                          }}
+                          className="h-12 px-3.5 rounded-xl bg-white/10 hover:bg-white/20 active:scale-95 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer border border-white/10"
+                          title="Copy OTP"
+                        >
+                          <Copy className="w-4 h-4 text-emerald-400" />
+                          <span className="hidden sm:inline">Copy</span>
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  {/* UNLOCKED 4-DIGIT OTP (Shown when confirmed) */}
-                  {(booking.status === "confirmed" ||
-                    booking.status === "confirmed_whatsapp" ||
-                    booking.status === "confirmed_pay_at_hub") &&
-                    booking.otp && (
-                      <div className="bg-[#1A1A1A] text-white rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+                  {/* 2. PENDING PAYMENT VERIFICATION STATE */}
+                  {isPending && (
+                    <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                      <div className="flex items-center gap-3 text-center sm:text-left">
+                        <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
+                          <Lock className="w-5 h-5 text-amber-700" />
+                        </div>
                         <div>
-                          <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-400">
-                            <KeyRound className="w-4 h-4 text-emerald-400" />
-                            <span>Handover 4-Digit Security OTP (Unlocked)</span>
+                          <div className="text-xs font-bold text-amber-950 uppercase tracking-wider">
+                            OTP Locked — Awaiting Payment Verification
                           </div>
-                          <p className="text-xs text-white/70 mt-0.5">
-                            Present this 4-digit OTP at {booking.pickupLocation || "your selected Vadodara hub"} to collect vehicle keys:
+                          <p className="text-xs text-amber-800 mt-0.5">
+                            Your 4-Digit Handover OTP will unlock here as soon as Ved Travels confirms your payment.
                           </p>
                         </div>
-
-                        <div className="flex items-center gap-2">
-                          <div className="bg-white text-black px-4 py-2 rounded-xl font-mono font-black text-2xl tracking-widest shadow-md">
-                            {booking.otp}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(booking.otp);
-                              toast.success("4-Digit OTP copied to clipboard!");
-                            }}
-                            className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer text-xs flex items-center gap-1 font-bold border border-white/10 active:scale-95"
-                            title="Copy OTP"
-                          >
-                            <Copy className="w-3.5 h-3.5 text-emerald-400" />
-                            <span>Copy OTP</span>
-                          </button>
-                        </div>
                       </div>
-                    )}
+                      <a
+                        href={`https://wa.me/919546883777?text=${encodeURIComponent(
+                          `Hi Shantanu, I have submitted booking ${booking.bookingCode} for ${booking.vehicleName}. Please verify payment to unlock my 4-digit start OTP.`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:scale-95 text-white text-xs font-bold shrink-0 transition-all cursor-pointer whitespace-nowrap shadow-xs"
+                      >
+                        Verify via WhatsApp
+                      </a>
+                    </div>
+                  )}
+
+                  {/* 3. IN-TRIP STATE */}
+                  {booking.status === "in_trip" && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-2xl p-3.5 flex items-center gap-2.5 text-xs text-purple-900 font-medium">
+                      <CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0" />
+                      <span>Trip is currently in progress. Vehicle keys handed over at pickup hub.</span>
+                    </div>
+                  )}
+
+                  {/* 4. COMPLETED STATE */}
+                  {booking.status === "completed" && (
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex items-center gap-2.5 text-xs text-slate-700 font-medium">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Trip completed. Thank you for choosing Ved Travels Vadodara!</span>
+                    </div>
+                  )}
+
+                  {/* 5. CANCELLED STATE */}
+                  {booking.status === "cancelled" && (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-3.5 text-xs text-red-800 flex items-center gap-2 font-medium">
+                      <span>ℹ️</span>
+                      <span>{booking.expiredReason || "Booking was cancelled."}</span>
+                    </div>
+                  )}
 
                   {/* Trip details grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-black/70">
@@ -455,8 +458,9 @@ export default function MyTripsModal() {
                     </div>
                   )}
                 </div>
-              ))
-            )}
+              );
+            })
+          )}
           </div>
         </div>
       </div>
