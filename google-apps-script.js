@@ -1,25 +1,34 @@
 /**
  * =========================================================================
- * VED TRAVELS VADODARA — 100% ALL-IN-ONE GOOGLE APPS SCRIPT DATABASE (v2)
+ * VED TRAVELS VADODARA — 100% PRODUCTION GOOGLE APPS SCRIPT DATABASE (v3)
  * =========================================================================
  * 
- * Includes 3 Core Production Tables:
- * 1. "Bookings" — Real client reservations, OTPs, slab details, payment modes
- * 2. "Vehicles" — Fleet inventory & newly submitted Host Partner vehicles
- * 3. "Users"    — Registered Customers, Host Partners (with approval states)
+ * Includes 3 Core Auto-Configured Production Tables:
+ * 1. "Bookings" — Real client bookings, 4-digit OTPs, 70/30 splits, payout UTRs
+ * 2. "Vehicles" — Fleet inventory & Host Partner vehicle listings
+ * 3. "Users"    — Customers, Host Partners, and Admins
  * 
- * 📌 STEP 1: Google Sheets kholo (https://sheets.new) aur name rakho: "Ved Travels DB".
- * 📌 STEP 2: Top menu me click karo: Extensions > Apps Script.
- * 📌 STEP 3: Sab delete karke ye code paste kar do.
- * 📌 STEP 4: "initialSetup" select karo aur "Run" dabao (Dono 3 tables auto create ho jayenge).
- * 📌 STEP 5: "Deploy" > "New deployment" > Web app (Execute as Me, Access: Anyone).
- * 📌 STEP 6: Web App URL copy karke .env.local me paste karo.
+ * 📌 STEP-BY-STEP SETUP IN NEW GOOGLE ACCOUNT:
+ * 1. Open Google Sheets (https://sheets.new) in your desired Google account.
+ * 2. Name your spreadsheet: "Ved Travels Database"
+ * 3. In the top menu, click: Extensions > Apps Script
+ * 4. Delete all existing code in Code.gs and paste this entire file.
+ * 5. At the top function dropdown, select "initialSetup" and click "Run".
+ *    (Google will ask for permissions -> Click Review -> Advanced -> Go to Untitled project -> Allow).
+ * 6. Click "Deploy" (top right) > "New deployment".
+ * 7. Click the gear icon (⚙️) next to Select type > choose "Web app".
+ * 8. Set:
+ *    - Description: "Ved Travels Production API"
+ *    - Execute as: "Me"
+ *    - Who has access: "Anyone" (Required so your website can sync)
+ * 9. Click "Deploy", then COPY the "Web app URL" (ends in /exec).
+ * 10. Update GOOGLE_SHEET_URL in your .env.local and Vercel Environment Variables.
  * =========================================================================
  */
 
 function initialSetup() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var result = setupDatabaseSheets(ss);
+  setupDatabaseSheets(ss);
 
   var defaultSheet = ss.getSheetByName("Sheet1");
   if (defaultSheet && ss.getSheets().length > 1) {
@@ -29,13 +38,13 @@ function initialSetup() {
   }
 
   Logger.log("✅ Ved Travels Database Tables (Bookings, Vehicles, Users) created successfully!");
-  return "Success! Tables created.";
+  return "Success! All 3 tables created with custom headers.";
 }
 
 function setupDatabaseSheets(ss) {
   var spreadsheet = ss || SpreadsheetApp.getActiveSpreadsheet();
 
-  // 1. "Bookings" Table
+  // 1. "Bookings" Table (27 columns)
   var bookingsSheet = spreadsheet.getSheetByName("Bookings");
   if (!bookingsSheet) {
     bookingsSheet = spreadsheet.insertSheet("Bookings");
@@ -47,6 +56,7 @@ function setupDatabaseSheets(ss) {
       "GJ-06 Plate",
       "Renter Name",
       "Renter Phone",
+      "Renter Email",
       "Start Date",
       "End Date",
       "Duration",
@@ -61,10 +71,14 @@ function setupDatabaseSheets(ss) {
       "Delivery Address",
       "Pickup Hub",
       "DL Photo Status",
-      "Host Name"
+      "Host Name",
+      "Host Share 70% (INR)",
+      "Platform Fee 30% (INR)",
+      "Host Payout Status",
+      "Payout Settlement UTR"
     ]);
 
-    var headerRange = bookingsSheet.getRange(1, 1, 1, 22);
+    var headerRange = bookingsSheet.getRange(1, 1, 1, 27);
     headerRange.setBackground("#059669");
     headerRange.setFontColor("#FFFFFF");
     headerRange.setFontWeight("bold");
@@ -73,7 +87,7 @@ function setupDatabaseSheets(ss) {
     bookingsSheet.setFrozenRows(1);
   }
 
-  // 2. "Vehicles" Table
+  // 2. "Vehicles" Table (17 columns)
   var vehiclesSheet = spreadsheet.getSheetByName("Vehicles");
   if (!vehiclesSheet) {
     vehiclesSheet = spreadsheet.insertSheet("Vehicles");
@@ -106,7 +120,7 @@ function setupDatabaseSheets(ss) {
     vehiclesSheet.setFrozenRows(1);
   }
 
-  // 3. "Users" Table
+  // 3. "Users" Table (11 columns)
   var usersSheet = spreadsheet.getSheetByName("Users");
   if (!usersSheet) {
     usersSheet = spreadsheet.insertSheet("Users");
@@ -154,16 +168,17 @@ function doPost(e) {
     var action = data.action || "create_booking";
     var timestamp = Utilities.formatDate(new Date(), "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
 
-    // CASE 1: Add New Customer Booking
+    // CASE 1: Add New Customer Booking (With 70/30 commission & payout fields)
     if (action === "create_booking") {
       sheets.bookingsSheet.appendRow([
         timestamp,
-        data.bookingCode || ("VED-BK-" + Math.floor(1000 + Math.random() * 9000)),
-        data.status || "confirmed_pay_at_hub",
+        data.bookingCode || ("VED-GJ06-" + Math.floor(10000 + Math.random() * 90000)),
+        data.status || "pending_payment",
         data.vehicleName || "",
         data.vehiclePlate || "",
         data.renterName || "",
         data.renterPhone || "",
+        data.renterEmail || "",
         data.startDate || "",
         data.endDate || "",
         data.durationLabel || "",
@@ -171,14 +186,18 @@ function doPost(e) {
         data.securityDeposit || 0,
         data.deliveryFee || 0,
         data.totalAmount || 0,
-        data.paymentMode === "upi_advance" ? "UPI Advance" : "Pay at Vadodara Hub / WhatsApp",
+        data.paymentMode === "upi_advance" ? "UPI Advance / UTR" : (data.paymentMode === "pay_at_hub" ? "Pay at Hub" : "WhatsApp Reservation"),
         data.upiUtr || "N/A",
         data.otp || "",
         data.doorstepDelivery ? "Yes (+INR 199)" : "No (Hub Pickup)",
-        data.deliveryAddress || data.pickupLocation || "Vadodara Hub",
-        data.pickupLocation || data.hubName || "Vadodara Railway Station",
+        data.deliveryAddress || data.pickupLocation || "Vadodara Central Hub",
+        data.pickupLocation || data.pickupHub || data.hubName || "Vadodara Railway Station",
         data.dlUploaded || (data.dlPhotoUrl ? "Photo Attached" : "Pending at Hub"),
-        data.hostName || "Ved Fleet Hub"
+        data.hostName || "Ved Fleet Hub",
+        data.hostShare70 || 0,
+        data.platformCommission30 || 0,
+        data.payoutStatus || (data.hostName && !data.hostName.includes("Fleet") ? "Pending Settlement" : "N/A (Fleet)"),
+        data.payoutUtr || ""
       ]);
 
       return ContentService.createTextOutput(
@@ -247,13 +266,18 @@ function doPost(e) {
       ).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // CASE 4: Update Booking Status
+    // CASE 4: Update Booking Status & Handover OTP
     if (action === "update_booking_status") {
       var rows = sheets.bookingsSheet.getDataRange().getValues();
       var updated = false;
       for (var i = 1; i < rows.length; i++) {
         if (rows[i][1] === data.bookingCode || rows[i][1] === data.bookingId) {
+          // Column 3: Status
           sheets.bookingsSheet.getRange(i + 1, 3).setValue(data.status);
+          // Column 18: 4-Digit Handover OTP (if provided)
+          if (data.otp) {
+            sheets.bookingsSheet.getRange(i + 1, 18).setValue(String(data.otp));
+          }
           updated = true;
           break;
         }
@@ -264,7 +288,29 @@ function doPost(e) {
       ).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // CASE 5: Approve Vehicle
+    // CASE 5: Update Host Payout Status & Settlement UTR
+    if (action === "update_payout_status") {
+      var pRows = sheets.bookingsSheet.getDataRange().getValues();
+      var pUpdated = false;
+      for (var p = 1; p < pRows.length; p++) {
+        if (pRows[p][1] === data.bookingCode || pRows[p][1] === data.bookingId) {
+          // Column 26: Host Payout Status
+          sheets.bookingsSheet.getRange(p + 1, 26).setValue(data.payoutStatus || "Paid");
+          // Column 27: Payout Settlement UTR
+          if (data.payoutUtr) {
+            sheets.bookingsSheet.getRange(p + 1, 27).setValue(String(data.payoutUtr));
+          }
+          pUpdated = true;
+          break;
+        }
+      }
+
+      return ContentService.createTextOutput(
+        JSON.stringify({ success: pUpdated, message: pUpdated ? "Payout status updated" : "Booking not found" })
+      ).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // CASE 6: Approve Vehicle
     if (action === "approve_vehicle") {
       var vRows = sheets.vehiclesSheet.getDataRange().getValues();
       var vUpdated = false;
@@ -281,7 +327,7 @@ function doPost(e) {
       ).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // CASE 6: Reject Vehicle
+    // CASE 7: Reject Vehicle
     if (action === "reject_vehicle") {
       var rRows = sheets.vehiclesSheet.getDataRange().getValues();
       var rUpdated = false;
@@ -298,7 +344,7 @@ function doPost(e) {
       ).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // CASE 7: Approve Host Account
+    // CASE 8: Approve Host Account
     if (action === "approve_host") {
       var uRows = sheets.usersSheet.getDataRange().getValues();
       var uUpdated = false;
@@ -315,7 +361,7 @@ function doPost(e) {
       ).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // CASE 8: Reject Host Account
+    // CASE 9: Reject Host Account
     if (action === "reject_host") {
       var uhRows = sheets.usersSheet.getDataRange().getValues();
       var uhUpdated = false;
@@ -389,12 +435,20 @@ function doGet(e) {
           vehiclePlate: String(bRow[4]),
           renterName: String(bRow[5]),
           renterPhone: String(bRow[6]),
-          startDate: String(bRow[7]),
-          totalAmount: Number(bRow[13]),
-          paymentMode: String(bRow[14]),
-          upiUtr: String(bRow[15]),
-          otp: String(bRow[16]),
-          pickupHub: String(bRow[19])
+          renterEmail: String(bRow[7]),
+          startDate: String(bRow[8]),
+          endDate: String(bRow[9]),
+          durationLabel: String(bRow[10]),
+          baseRent: Number(bRow[11]),
+          totalAmount: Number(bRow[14]),
+          paymentMode: String(bRow[15]),
+          upiUtr: String(bRow[16]),
+          otp: String(bRow[17]),
+          pickupHub: String(bRow[20]),
+          hostShare70: Number(bRow[23]),
+          platformCommission30: Number(bRow[24]),
+          payoutStatus: String(bRow[25]),
+          payoutUtr: String(bRow[26])
         });
       }
     }

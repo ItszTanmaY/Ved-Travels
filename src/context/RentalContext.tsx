@@ -1033,7 +1033,7 @@ export function RentalProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Sync status & OTP to Google Sheets
-    updateBookingStatusInGoogleSheets(booking.bookingCode, "confirmed");
+    updateBookingStatusInGoogleSheets(booking.bookingCode, "confirmed", generatedOtp);
   };
 
   const verifyHandoverOtp = (bookingId: string, enteredOtp: string) => {

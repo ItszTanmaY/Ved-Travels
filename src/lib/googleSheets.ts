@@ -80,7 +80,8 @@ export async function syncUserToGoogleSheets(user: User) {
 
 export async function updateBookingStatusInGoogleSheets(
   bookingCode: string,
-  status: string
+  status: string,
+  otp?: string
 ) {
   try {
     const res = await fetch("/api/sheets", {
@@ -90,6 +91,7 @@ export async function updateBookingStatusInGoogleSheets(
         action: "update_booking_status",
         bookingCode,
         status,
+        otp: otp || "",
       }),
     });
     return await res.json();
