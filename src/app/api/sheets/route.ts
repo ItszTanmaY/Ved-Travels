@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
+// Default Google Apps Script Web App endpoint (auto-fallback if env variable is not set in hosting dashboard)
+const DEFAULT_SHEETS_URL =
+  "https://script.google.com/macros/s/AKfycbw78VOLamgAVIPDlFCQ1-yFCpSCvyyD9tI5etcrMc2LAS0h33t5HIYbeslM4PAYCFTJ/exec";
+
 // Only read server-side environment variables to ensure Google Script URL is NEVER leaked in client bundles
-function getSheetsUrl(): string | undefined {
+function getSheetsUrl(): string {
   return (
     process.env.GOOGLE_SHEET_URL ||
     process.env.GOOGLE_SHEETS_URL ||
@@ -10,7 +14,8 @@ function getSheetsUrl(): string | undefined {
     process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL ||
     process.env.NEXT_PUBLIC_GOOGLE_SHEETS_URL ||
     process.env.NEXT_PUBLIC_GOOGLE_SHEETS_API_URL ||
-    process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL
+    process.env.NEXT_PUBLIC_GOOGLE_SCRIPT_URL ||
+    DEFAULT_SHEETS_URL
   );
 }
 
